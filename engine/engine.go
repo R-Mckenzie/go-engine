@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	idealFPS   = 120
+	idealFPS   = 60
 	idealDelta = time.Second / idealFPS
 )
 
@@ -22,9 +22,10 @@ type Game struct {
 // setup the game
 func NewGame() *Game {
 	runtime.LockOSThread()
+	win := graphics.CreateWindow(800, 600)
 	return &Game{
-		window:   graphics.CreateWindow(800, 600),
-		renderer: graphics.NewRenderer(),
+		window:   win,
+		renderer: graphics.NewRenderer(win),
 	}
 }
 
@@ -59,7 +60,6 @@ func (g *Game) Run() {
 			for acc >= idealDelta.Seconds() {
 				g.update()
 				g.renderer.Draw()
-				g.window.SwapBuffers()
 				acc -= idealDelta.Seconds()
 				fps++
 			}

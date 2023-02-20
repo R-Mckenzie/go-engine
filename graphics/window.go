@@ -8,10 +8,13 @@ import (
 
 type Window struct {
 	glfwWindow *glfw.Window
+	width      int
+	height     int
 }
 
 func CreateWindow(width, height int) Window {
 	if err := glfw.Init(); err != nil {
+		glfw.Terminate()
 		panic(err)
 	}
 	log.Println("Initialised glfw")
@@ -29,10 +32,14 @@ func CreateWindow(width, height int) Window {
 	window.MakeContextCurrent()
 
 	log.Println("Created window")
-	return Window{glfwWindow: window}
+	return Window{
+		glfwWindow: window,
+		width:      width,
+		height:     height,
+	}
 }
 
-func (w Window) SwapBuffers() {
+func (w Window) swapBuffers() {
 	w.glfwWindow.SwapBuffers()
 	glfw.PollEvents()
 }
