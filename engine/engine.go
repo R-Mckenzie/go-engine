@@ -15,17 +15,20 @@ const (
 )
 
 type Game struct {
-	window   graphics.Window
+	window   *Window
 	renderer *graphics.Renderer
+	input    Input
 }
 
 // setup the game
 func NewGame() *Game {
 	runtime.LockOSThread()
-	win := graphics.CreateWindow(800, 600)
+	win := CreateWindow(800, 600)
+	input := NewInput(win)
 	return &Game{
 		window:   win,
-		renderer: graphics.NewRenderer(win),
+		renderer: graphics.NewRenderer(*win.GlfwWindow),
+		input:    *input,
 	}
 }
 
@@ -60,6 +63,7 @@ func (g *Game) Run() {
 			for acc >= idealDelta.Seconds() {
 				g.update()
 				g.renderer.Draw()
+				g.window.Redraw()
 				acc -= idealDelta.Seconds()
 				fps++
 			}
@@ -71,7 +75,9 @@ func (g *Game) Run() {
 }
 
 func (g *Game) update() {
-
+	glfw.PollEvents()
+	g.window.GetInput()
+	// logic
 }
 
 func (g *Game) Quit() {
