@@ -1,4 +1,4 @@
-package graphics
+package engine
 
 import (
 	"fmt"
@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	vertexShaderSource   = "graphics/shaders/vertexShader.glsl"
-	fragmentShaderSource = "graphics/shaders/fragmentShader.glsl"
+	vertexShaderSource   = "shaders/vertexShader.glsl"
+	fragmentShaderSource = "shaders/fragmentShader.glsl"
 )
 
 type Shader uint32
@@ -63,6 +63,9 @@ func (s Shader) SetFloat(name string, v float32) {
 	gl.Uniform1f(s.UniformLoc(name), v)
 }
 
+func (s Shader) SetVec2(name string, v mgl32.Vec2) {
+	gl.Uniform2f(s.UniformLoc(name), v[0], v[1])
+}
 func (s Shader) SetVec4(name string, v mgl32.Vec4) {
 	gl.Uniform4f(s.UniformLoc(name), v[0], v[1], v[2], v[3])
 }

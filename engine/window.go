@@ -7,9 +7,9 @@ import (
 )
 
 type Window struct {
-	GlfwWindow *glfw.Window
-	Width      int
-	Height     int
+	window *glfw.Window
+	Width  int
+	Height int
 
 	// These are to fix incorrect rendering on macOS
 	windowMoved bool
@@ -38,7 +38,7 @@ func CreateWindow(width, height int) *Window {
 
 	log.Println("Created window")
 	return &Window{
-		GlfwWindow:  window,
+		window:      window,
 		Width:       width,
 		Height:      height,
 		windowMoved: false,
@@ -46,26 +46,26 @@ func CreateWindow(width, height int) *Window {
 	}
 }
 
-func (w *Window) Redraw() {
+func (w *Window) SetTitle(title string) {
+	w.window.SetTitle(title)
+}
 
+func (w *Window) Redraw() {
 	// These are to fix incorrect rendering on macOS
 	if !w.windowMoved {
-		x, y := w.GlfwWindow.GetPos()
-		w.GlfwWindow.SetPos(x+w.moveDir, y)
+		x, y := w.window.GetPos()
+		w.window.SetPos(x+w.moveDir, y)
 		w.moveDir *= -1
 		w.windowMoved = true
 	}
-
-	glfw.PollEvents()
+	w.window.SwapBuffers()
 }
 
-func (w *Window) GetInput() {
-	if w.GlfwWindow.GetKey(glfw.KeyEscape) == glfw.Press {
-		w.GlfwWindow.SetShouldClose(true)
-	}
-
+func (w *Window) processInput() {
+	glfw.PollEvents()
+	Input()
 }
 
 func (w *Window) Closed() bool {
-	return w.GlfwWindow.ShouldClose()
+	return w.window.ShouldClose()
 }

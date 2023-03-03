@@ -2,45 +2,111 @@ package engine
 
 import (
 	"log"
+	"math"
+	"sync"
 
+	imgui "github.com/AllenDang/cimgui-go"
 	"github.com/go-gl/glfw/v3.2/glfw"
 )
 
-type Input struct {
-	window   *Window
-	keysDown [KeyLast]bool
+type InputManager interface {
+	KeyDown(int) bool
+	setWindow(*Window)
+	imguiPrep()
 }
 
-func NewInput(w *Window) *Input {
-	keysDown := [KeyLast]bool{}
-	input := &Input{
-		keysDown: keysDown,
-	}
-	input.SetWindow(w)
-	return input
+type input struct {
+	window    *Window
+	keysDown  *[KeyLast]bool
+	mouseDown *[5]bool
+
+	imguiIO imgui.ImGuiIO
+	time    float64
 }
 
-func (i *Input) setCallBack(w *Window) {
-	w.GlfwWindow.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+var inputOnce sync.Once
+var inputSingleton InputManager
+
+func Input() InputManager {
+	inputOnce.Do(func() {
+		keysDown := [KeyLast]bool{}
+		inputSingleton = &input{
+			keysDown: &keysDown,
+		}
+	})
+	return inputSingleton
+}
+
+func (i *input) setCallBacks(w *Window) {
+	w.window.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 		switch action {
 		case glfw.Press:
-			i.keysDown[key] = true
 			log.Printf("Key: %s pressed", buttonNames[int(key)])
 		case glfw.Release:
 			i.keysDown[key] = false
 			log.Printf("Key: %s released", buttonNames[int(key)])
 		}
 
+		// IMGUI
+		i.keysDown[key] = true
+		i.imguiIO.AddKeyEvent(imgui.ImGuiKey(key), action == glfw.Press)
+	})
+
+	w.window.SetMouseButtonCallback(func(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mods glfw.ModifierKey) {
+		if int(button) < len(i.mouseDown) {
+			switch action {
+			case glfw.Press:
+				i.mouseDown[button] = true
+				log.Printf("Mouse: %s pressed", mouseNames[int(button)])
+			case glfw.Release:
+				i.mouseDown[button] = false
+				log.Printf("Mouse: %s released", mouseNames[int(button)])
+			}
+		}
+	})
+
+	w.window.SetScrollCallback(func(window *glfw.Window, x, y float64) {
+		i.imguiIO.AddMouseWheelDelta(float32(x), float32(y))
+	})
+
+	w.window.SetCharCallback(func(window *glfw.Window, char rune) {
+		i.imguiIO.AddInputCharactersUTF8(string(char))
 	})
 }
 
-func (i *Input) SetWindow(w *Window) {
-	i.setCallBack(w)
+func (i *input) setWindow(w *Window) {
+	i.setCallBacks(w)
 	i.window = w
 }
 
-func (i *Input) KeyDown() bool {
-	return false
+func (i *input) KeyDown(key int) bool {
+	return i.keysDown[key]
+}
+
+func (i *input) imguiPrep() {
+	i.imguiIO.SetDisplaySize(imgui.NewImVec2(float32(i.window.Width), float32(i.window.Height)))
+
+	//Imgui timestep
+	currentTime := glfw.GetTime()
+	if i.time > 0 {
+		i.imguiIO.SetDeltaTime(float32(currentTime - i.time))
+	}
+	i.time = currentTime
+
+	// pass inputs
+	if i.window.window.GetAttrib(glfw.Focused) != 0 {
+		x, y := i.window.window.GetCursorPos()
+		i.imguiIO.SetMousePos(imgui.ImVec2{X: float32(x), Y: float32(y)})
+	} else {
+		i.imguiIO.SetMousePos(imgui.ImVec2{X: -math.MaxFloat32, Y: -math.MaxFloat32})
+	}
+
+	//consume mouse clicks
+	for x := 0; x < len(i.mouseDown); x++ {
+		down := i.mouseDown[x]
+		i.imguiIO.SetMouseButtonDown(x, down)
+		i.mouseDown[x] = false
+	}
 }
 
 // List of all keyboard buttons.
@@ -167,17 +233,19 @@ const (
 	KeyRightSuper   = int(glfw.KeyRightSuper)
 	KeyMenu         = int(glfw.KeyMenu)
 	KeyLast         = int(glfw.KeyLast)
+
+	MouseLeft   = int(glfw.MouseButtonLeft)
+	MouseRight  = int(glfw.MouseButtonRight)
+	MouseMiddle = int(glfw.MouseButtonMiddle)
 )
 
+var mouseNames = map[int]string{
+	MouseLeft:   "LMB",
+	MouseRight:  "RMB",
+	MouseMiddle: "MMB",
+}
+
 var buttonNames = map[int]string{
-	// MouseButton4:      "MouseButton4",
-	// MouseButton5:      "MouseButton5",
-	// MouseButton6:      "MouseButton6",
-	// MouseButton7:      "MouseButton7",
-	// MouseButton8:      "MouseButton8",
-	// MouseButtonLeft:   "MouseButtonLeft",
-	// MouseButtonRight:  "MouseButtonRight",
-	// MouseButtonMiddle: "MouseButtonMiddle",
 	KeyUnknown:      "Unknown",
 	KeySpace:        "Space",
 	KeyApostrophe:   "Apostrophe",
