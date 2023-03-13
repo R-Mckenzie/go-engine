@@ -6,8 +6,8 @@ import (
 	"github.com/go-gl/glfw/v3.2/glfw"
 )
 
-type Window struct {
-	window *glfw.Window
+type window struct {
+	win    *glfw.Window
 	Width  int
 	Height int
 
@@ -16,7 +16,7 @@ type Window struct {
 	moveDir     int
 }
 
-func CreateWindow(width, height int) *Window {
+func createWindow(width, height int) *window {
 	if err := glfw.Init(); err != nil {
 		glfw.Terminate()
 		panic(err)
@@ -28,17 +28,17 @@ func CreateWindow(width, height int) *Window {
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-	glfw.WindowHint(glfw.DoubleBuffer, glfw.True)
 
-	window, err := glfw.CreateWindow(width, height, "Go Game Engine", nil, nil)
+	win, err := glfw.CreateWindow(width, height, "Go Game Engine", nil, nil)
 	if err != nil {
 		panic(err)
 	}
-	window.MakeContextCurrent()
+	win.MakeContextCurrent()
+	glfw.SwapInterval(0)
 
 	log.Println("Created window")
-	return &Window{
-		window:      window,
+	return &window{
+		win:         win,
 		Width:       width,
 		Height:      height,
 		windowMoved: false,
@@ -46,26 +46,39 @@ func CreateWindow(width, height int) *Window {
 	}
 }
 
-func (w *Window) SetTitle(title string) {
-	w.window.SetTitle(title)
+func (w *window) getSize() [2]float32 {
+	width, height := w.win.GetSize()
+	return [2]float32{float32(width), float32(height)}
 }
 
-func (w *Window) Redraw() {
+func (w *window) getFramebuffer() [2]float32 {
+	width, height := w.win.GetFramebufferSize()
+	return [2]float32{float32(width), float32(height)}
+}
+
+func (w *window) setTitle(title string) {
+	w.win.SetTitle(title)
+}
+
+func (w *window) redraw() {
 	// These are to fix incorrect rendering on macOS
 	if !w.windowMoved {
-		x, y := w.window.GetPos()
-		w.window.SetPos(x+w.moveDir, y)
+		x, y := w.win.GetPos()
+		w.win.SetPos(x+w.moveDir, y)
 		w.moveDir *= -1
 		w.windowMoved = true
 	}
-	w.window.SwapBuffers()
+	w.win.SwapBuffers()
 }
 
-func (w *Window) processInput() {
+func (w *window) processInput() {
 	glfw.PollEvents()
-	Input()
 }
 
-func (w *Window) Closed() bool {
-	return w.window.ShouldClose()
+func (w *window) closed() bool {
+	return w.win.ShouldClose()
+}
+
+func WindowSize() (int, int) {
+	return glfw.GetCurrentContext().GetSize()
 }

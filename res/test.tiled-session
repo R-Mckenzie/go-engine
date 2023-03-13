@@ -1,0 +1,37 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "activeFile": "atlas.tsx",
+    "expandedProjectPaths": [
+        "."
+    ],
+    "fileStates": {
+        "atlas.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "test.tmx": {
+            "scale": 0.94,
+            "selectedLayer": 2,
+            "viewCenter": {
+                "x": 495.2127659574468,
+                "y": 324.468085106383
+            }
+        }
+    },
+    "frame.defaultDuration": 90,
+    "last.imagePath": "/Users/ross/Source/game-engine/res",
+    "map.lastUsedFormat": "tmx",
+    "openFiles": [
+        "test.tmx",
+        "atlas.tsx"
+    ],
+    "project": "test.tiled-project",
+    "recentFiles": [
+        "test.tmx",
+        "atlas.tsx"
+    ],
+    "tileset.lastUsedFormat": "tsx"
+}

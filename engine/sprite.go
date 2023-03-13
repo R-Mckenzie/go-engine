@@ -1,7 +1,7 @@
 package engine
 
 import (
-	"github.com/go-gl/gl/v4.1-core/gl"
+	"github.com/go-gl/gl/all-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 )
 
@@ -13,50 +13,8 @@ type Sprite struct {
 	texture Texture
 }
 
-func NewSprite(width, height, x, y int, texture Texture) Sprite {
-	return Sprite{
-		Width:     width,
-		Height:    height,
-		Transform: NewTransform(x, y, 0),
-		texture:   texture,
-		vao:       makeVAO(quad(float32(width), float32(height), texture.texCoords)),
-	}
-}
-
-func (s Sprite) RenderItem() renderItem {
-	return renderItem{
-		vao:       s.vao,
-		shader:    DefaultShader(),
-		transform: s.Transform,
-		texture:   s.texture,
-	}
-}
-
-func quad(width, height float32, uv mgl32.Vec4) ([]float32, []uint32) {
-	w2, h2 := width/2, height/2
-	return []float32{ // vertices
-			-w2, -h2, 0.0, uv[0], uv[2],
-			w2, -h2, 0.0, uv[1], uv[2],
-			w2, h2, 0.0, uv[1], uv[3],
-			-h2, h2, 0.0, uv[0], uv[3],
-		}, []uint32{ // indices
-			0, 1, 3,
-			1, 2, 3,
-		}
-}
-
-// w2, h2 := width/2, height/2
-// return []float32{ // vertices
-// 		-w2, -h2, 0.0, 0.0, 0.0,
-// 		w2, -h2, 0.0, 1.0, 0.0,
-// 		w2, h2, 0.0, 1.0, 1.0,
-// 		-h2, h2, 0.0, 0.0, 1.0,
-// 	}, []uint32{ // indices
-// 		0, 1, 3,
-// 		1, 2, 3,
-// 	}
-
-func makeVAO(p []float32, i []uint32) uint32 {
+func NewSprite(width, height, x, y, z int, texture Texture) Sprite {
+	p, i := quad(float32(width), float32(height), texture.texCoords)
 	var vbo, vao, ebo uint32
 
 	// Create GL objects
@@ -79,5 +37,34 @@ func makeVAO(p []float32, i []uint32) uint32 {
 	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
 	gl.BindVertexArray(0)
 
-	return vao
+	return Sprite{
+		Width:     width,
+		Height:    height,
+		Transform: NewTransform(x, y, z),
+		texture:   texture,
+		vao:       vao,
+	}
+}
+
+func (s Sprite) RenderItem() renderItem {
+	return renderItem{
+		vao:       s.vao,
+		shader:    DefaultShader(),
+		indices:   6,
+		transform: s.Transform,
+		image:     s.texture.image,
+	}
+}
+
+func quad(width, height float32, uv mgl32.Vec4) ([]float32, []uint32) {
+	w2, h2 := width/2, height/2
+	return []float32{ // vertices
+			-w2, -h2, 0.0, uv[0], uv[2],
+			w2, -h2, 0.0, uv[1], uv[2],
+			w2, h2, 0.0, uv[1], uv[3],
+			-h2, h2, 0.0, uv[0], uv[3],
+		}, []uint32{ // indices
+			0, 1, 3,
+			1, 2, 3,
+		}
 }

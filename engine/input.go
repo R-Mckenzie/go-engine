@@ -1,8 +1,6 @@
 package engine
 
 import (
-	"log"
-	"math"
 	"sync"
 
 	imgui "github.com/AllenDang/cimgui-go"
@@ -11,14 +9,19 @@ import (
 
 type InputManager interface {
 	KeyDown(int) bool
-	setWindow(*Window)
-	imguiPrep()
+	KeyUp(int) bool
+
+	update()
+	setWindow(*window)
+	imguiPrepFrame(dt float32)
+	setImguiIO(io imgui.ImGuiIO)
 }
 
 type input struct {
-	window    *Window
+	window    *window
 	keysDown  *[KeyLast]bool
-	mouseDown *[5]bool
+	keysUp    *[KeyLast]bool
+	mouseDown *[3]bool
 
 	imguiIO imgui.ImGuiIO
 	time    float64
@@ -30,51 +33,54 @@ var inputSingleton InputManager
 func Input() InputManager {
 	inputOnce.Do(func() {
 		keysDown := [KeyLast]bool{}
+		keysUp := [KeyLast]bool{}
+		mouseDown := [3]bool{}
 		inputSingleton = &input{
-			keysDown: &keysDown,
+			keysDown:  &keysDown,
+			keysUp:    &keysUp,
+			mouseDown: &mouseDown,
+			imguiIO:   imgui.GetIO(),
 		}
 	})
 	return inputSingleton
 }
 
-func (i *input) setCallBacks(w *Window) {
-	w.window.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-		switch action {
-		case glfw.Press:
-			log.Printf("Key: %s pressed", buttonNames[int(key)])
-		case glfw.Release:
-			i.keysDown[key] = false
-			log.Printf("Key: %s released", buttonNames[int(key)])
-		}
-
-		// IMGUI
-		i.keysDown[key] = true
-		i.imguiIO.AddKeyEvent(imgui.ImGuiKey(key), action == glfw.Press)
-	})
-
-	w.window.SetMouseButtonCallback(func(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mods glfw.ModifierKey) {
+func (i *input) setCallBacks(w *window) {
+	w.win.SetMouseButtonCallback(func(win *glfw.Window, button glfw.MouseButton, action glfw.Action, mods glfw.ModifierKey) {
 		if int(button) < len(i.mouseDown) {
 			switch action {
 			case glfw.Press:
 				i.mouseDown[button] = true
-				log.Printf("Mouse: %s pressed", mouseNames[int(button)])
 			case glfw.Release:
 				i.mouseDown[button] = false
-				log.Printf("Mouse: %s released", mouseNames[int(button)])
 			}
 		}
 	})
 
-	w.window.SetScrollCallback(func(window *glfw.Window, x, y float64) {
-		i.imguiIO.AddMouseWheelDelta(float32(x), float32(y))
+	w.win.SetKeyCallback(func(win *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+		switch action {
+		case glfw.Press:
+			i.keysDown[key] = true
+		case glfw.Release:
+			i.keysDown[key] = false
+			i.keysUp[key] = true
+		}
+
+		// IMGUI
+		i.imguiIO.AddKeyEvent(imgui.ImGuiKey(key), action == glfw.Press)
 	})
 
-	w.window.SetCharCallback(func(window *glfw.Window, char rune) {
-		i.imguiIO.AddInputCharactersUTF8(string(char))
+	w.win.SetScrollCallback(func(window *glfw.Window, x, y float64) {
+		i.imguiIO.AddMouseWheelDelta(float32(x), float32(y))
 	})
 }
 
-func (i *input) setWindow(w *Window) {
+func (i *input) setImguiIO(io imgui.ImGuiIO) {
+	i.imguiIO = io
+	io.AddFocusEvent(true)
+}
+
+func (i *input) setWindow(w *window) {
 	i.setCallBacks(w)
 	i.window = w
 }
@@ -83,30 +89,31 @@ func (i *input) KeyDown(key int) bool {
 	return i.keysDown[key]
 }
 
-func (i *input) imguiPrep() {
-	i.imguiIO.SetDisplaySize(imgui.NewImVec2(float32(i.window.Width), float32(i.window.Height)))
+func (i *input) KeyUp(key int) bool {
+	return i.keysUp[key]
+}
 
-	//Imgui timestep
-	currentTime := glfw.GetTime()
-	if i.time > 0 {
-		i.imguiIO.SetDeltaTime(float32(currentTime - i.time))
-	}
-	i.time = currentTime
+func (i *input) imguiPrepFrame(dt float32) {
+	i.imguiIO.SetDisplaySize(imgui.NewImVec2(float32(i.window.Width), float32(i.window.Height)))
+	i.imguiIO.SetDeltaTime(dt)
 
 	// pass inputs
-	if i.window.window.GetAttrib(glfw.Focused) != 0 {
-		x, y := i.window.window.GetCursorPos()
-		i.imguiIO.SetMousePos(imgui.ImVec2{X: float32(x), Y: float32(y)})
-	} else {
-		i.imguiIO.SetMousePos(imgui.ImVec2{X: -math.MaxFloat32, Y: -math.MaxFloat32})
-	}
+	x, y := i.window.win.GetCursorPos()
+	i.imguiIO.SetMousePos(imgui.ImVec2{X: float32(x), Y: float32(y)})
 
 	//consume mouse clicks
 	for x := 0; x < len(i.mouseDown); x++ {
-		down := i.mouseDown[x]
+		down := i.mouseDown[x] || i.window.win.GetMouseButton(glfw.MouseButton(x)) == glfw.Press
 		i.imguiIO.SetMouseButtonDown(x, down)
 		i.mouseDown[x] = false
 	}
+}
+
+func (i *input) update() {
+	for x := 0; x < KeyLast; x++ {
+		i.keysUp[x] = false
+	}
+
 }
 
 // List of all keyboard buttons.

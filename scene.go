@@ -6,19 +6,19 @@ import (
 )
 
 type Player struct {
-	engine.Transform
 	engine.Sprite
+	c engine.Collider
 }
 
 func NewPlayer() Player {
 	texture := engine.NewTexture("res/man.png")
 	return Player{
-		Transform: engine.NewTransform(100, 100, 0),
-		Sprite:    engine.NewSprite(64, 64, 100, 100, texture),
+		Sprite: engine.NewSprite(64, 64, 500, 200, 5, texture),
+		c:      engine.NewCollider(64, 64, 500, 200),
 	}
 }
 
-func (p *Player) Update() {
+func (p *Player) Update(t engine.Tilemap) {
 	move := mgl32.Vec3{0, 0, 0}
 	if engine.Input().KeyDown(engine.KeyW) {
 		move[1] -= 1
@@ -32,52 +32,88 @@ func (p *Player) Update() {
 	if engine.Input().KeyDown(engine.KeyD) {
 		move[0] += 1
 	}
-
 	if move.Len() > 0 {
 		move = move.Normalize()
 	}
 
-	p.Pos = p.Transform.Pos.Add(move.Mul(10))
-	p.Sprite.Transform = p.Transform
+	speed := float32(5.0)
+
+	oldPos := p.Pos
+	p.Pos[0] = p.Pos[0] + move[0]*speed
+	p.c = p.c.SetPos(int(p.Pos[0]), int(p.Pos[1]))
+	if engine.CollidesMapCollider(t, p.c) {
+		p.Pos = oldPos
+		p.c = p.c.SetPos(int(p.Pos[0]), int(p.Pos[1]))
+	}
+
+	oldPos = p.Pos
+	p.Pos[1] = p.Pos[1] + move[1]*speed
+	p.c = p.c.SetPos(int(p.Pos[0]), int(p.Pos[1]))
+	if engine.CollidesMapCollider(t, p.c) {
+		p.Pos = oldPos
+		p.c = p.c.SetPos(int(p.Pos[0]), int(p.Pos[1]))
+	}
 }
 
+// =====
 type testScene struct {
-	p      Player
-	camera engine.Camera
-	tiles  []engine.Sprite
+	p       Player
+	camera  engine.Camera2D
+	tiles   []engine.Sprite
+	tileMap engine.Tilemap
+	font    *engine.Font
 }
 
 func newScene() *testScene {
 	p := NewPlayer()
-	atlas, _ := engine.LoadImage("res/atlas.png")
-	water := engine.TextureFromAtlas(atlas, 0, 0, 32, 32)
-	grass := engine.TextureFromAtlas(atlas, 32, 0, 32, 32)
-	sand := engine.TextureFromAtlas(atlas, 64, 0, 32, 32)
-	dirt := engine.TextureFromAtlas(atlas, 96, 0, 32, 32)
-	placeholder := engine.TextureFromAtlas(atlas, 128, 0, 32, 32)
-	stone := engine.TextureFromAtlas(atlas, 0, 32, 32, 32)
+	tilemap := engine.LoadTilemap("res/test.tmx", "res/atlas.png", 2)
+	font, _ := engine.LoadFont("res/ProggyClean.ttf", 64)
 
-	tiles := []engine.Sprite{
-		engine.NewSprite(32, 32, 100, 100, water),
-		engine.NewSprite(32, 32, 300, 400, grass),
-		engine.NewSprite(32, 32, 500, 10, placeholder),
-		engine.NewSprite(32, 32, 234, 200, stone),
-		engine.NewSprite(32, 32, 634, 500, dirt),
-		engine.NewSprite(32, 32, 634, 300, sand),
-		engine.NewSprite(32, 32, 400, 400, water),
-	}
+	engine.LoadSound("res/music.mp3", "bg")
+
 	return &testScene{
-		p:      p,
-		tiles:  tiles,
-		camera: engine.NewCamera2D(0, 0),
+		p:       p,
+		tileMap: tilemap,
+		camera:  engine.NewCamera2D(0, 0),
+		font:    font,
 	}
 }
 
+var isplaying bool = false
+
 func (s *testScene) Update() {
-	s.p.Update()
-	engine.Renderer2D().BeginScene(s.camera)
-	for _, t := range s.tiles {
-		engine.Renderer2D().PushItem(t.RenderItem())
+	s.p.Update(s.tileMap)
+	camX, camY := int(s.p.Pos[0]-400), int(s.p.Pos[1]-300)
+
+	mw, mh := s.tileMap.PixelSize()
+	ww, wh := engine.WindowSize()
+
+	if camX < 0 {
+		camX = 0
 	}
+	if camY < 0 {
+		camY = 0
+	}
+	if camX+ww > mw {
+		camX = mw - ww
+	}
+	if camY+wh > mh {
+		camY = mh - wh
+	}
+
+	if engine.Input().KeyUp(engine.KeyP) && !isplaying {
+		engine.LoopSound("bg")
+		isplaying = true
+	}
+
+	if engine.Input().KeyUp(engine.KeyO) && isplaying {
+		engine.StopLoop("bg")
+		isplaying = false
+	}
+
+	s.camera.SetPos(camX, camY)
+	engine.Renderer2D().BeginScene(s.camera)
+	engine.Renderer2D().PushItem(s.tileMap.RenderItem())
 	engine.Renderer2D().PushItem(s.p.RenderItem())
+	s.font.Print(100, 0, "Hello World")
 }

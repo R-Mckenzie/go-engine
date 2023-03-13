@@ -6,7 +6,7 @@ import (
 
 	_ "image/png"
 
-	"github.com/go-gl/gl/v4.1-core/gl"
+	"github.com/go-gl/gl/all-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 )
 
@@ -50,14 +50,11 @@ func LoadImage(filepath string) (Image, error) {
 	var tex uint32
 	gl.GenTextures(1, &tex)
 	gl.BindTexture(gl.TEXTURE_2D, tex)
-
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-
 	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, int32(w), int32(h), 0, gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(pixels))
-	gl.GenerateMipmap(gl.TEXTURE_2D)
 	return Image{
 		id:     tex,
 		width:  float32(w),
@@ -86,14 +83,7 @@ func NewTexture(filepath string) Texture {
 	}
 }
 
-func NewTextureFromImage(image Image) Texture {
-	return Texture{
-		image:     image,
-		texCoords: mgl32.Vec4{0, 1, 0, 1},
-	}
-}
-
-func TextureFromAtlas(image Image, xOffset, yOffset, width, height float32) Texture {
+func NewTextureFromAtlas(image Image, xOffset, yOffset, width, height float32) Texture {
 	umin := xOffset / image.width
 	umax := (xOffset + width) / image.width
 	vmin := yOffset / image.height
