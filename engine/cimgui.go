@@ -27,6 +27,7 @@ type imguiRenderer struct {
 
 func NewImguiRenderer() *imguiRenderer {
 	io := imgui.GetIO()
+	io.SetIniFilename("")
 	renderer := imguiRenderer{
 		io:          io,
 		glslVersion: "#version 410",
