@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"github.com/go-gl/gl/all-core/gl"
+	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 )
 
@@ -113,5 +113,6 @@ func readFile(filepath string) string {
 	if err != nil {
 		panic(err)
 	}
+	text = append(text, '\x00')
 	return string(text)
 }

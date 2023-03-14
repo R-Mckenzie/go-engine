@@ -5,7 +5,7 @@ package engine
 
 import (
 	imgui "github.com/AllenDang/cimgui-go"
-	"github.com/go-gl/gl/all-core/gl"
+	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
 type imguiRenderer struct {

@@ -9,7 +9,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/go-gl/gl/all-core/gl"
+	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/gltext"
 	"github.com/golang/freetype"
 	"golang.org/x/image/math/fixed"
