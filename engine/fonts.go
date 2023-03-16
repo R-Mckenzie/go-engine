@@ -96,7 +96,7 @@ func LoadFont(path string, scale int) (*Font, error) {
 	}
 
 	for i, glyph := range glyphs {
-		glyphs[i].texture = NewTextureFromAtlas(atlas, float32(glyph.x), float32(glyph.y), float32(glyph.width), float32(glyph.height))
+		glyphs[i].texture = NewTextureFromAtlas(atlas, float32(glyph.x), float32(glyph.y), float32(glyph.width), float32(glyph.height), false)
 	}
 
 	fmt.Println(len(glyphs))

@@ -7,7 +7,7 @@ type Atlas struct {
 }
 
 func NewAtlas(filepath string, tileSize, atlasWidth int) Atlas {
-	tex, err := LoadImage(filepath)
+	tex, err := NewImage(filepath)
 	if err != nil {
 		panic(err)
 	}

@@ -93,7 +93,6 @@ func (g *Game) Run() {
 		for acc >= idealDelta.Seconds() {
 			g.window.processInput()
 			g.update()
-			updateSound()
 			Input().update()
 			ups++
 			acc -= idealDelta.Seconds()

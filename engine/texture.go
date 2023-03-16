@@ -16,7 +16,7 @@ type Image struct {
 	height float32
 }
 
-func LoadImage(filepath string) (Image, error) {
+func NewImage(filepath string) (Image, error) {
 	file, err := os.Open(filepath)
 	if err != nil {
 		return Image{}, err
@@ -72,7 +72,7 @@ type Texture struct {
 }
 
 func NewTexture(filepath string) Texture {
-	img, err := LoadImage(filepath)
+	img, err := NewImage(filepath)
 	if err != nil {
 		panic(err)
 	}
@@ -83,11 +83,19 @@ func NewTexture(filepath string) Texture {
 	}
 }
 
-func NewTextureFromAtlas(image Image, xOffset, yOffset, width, height float32) Texture {
+func NewTextureFromAtlas(image Image, xOffset, yOffset, width, height float32, flipped bool) Texture {
 	umin := xOffset / image.width
 	umax := (xOffset + width) / image.width
 	vmin := yOffset / image.height
 	vmax := (yOffset + height) / image.height
+
+	if flipped {
+		return Texture{
+			image:     image,
+			texCoords: mgl32.Vec4{umax, umin, vmin, vmax},
+		}
+	}
+
 	return Texture{
 		image:     image,
 		texCoords: mgl32.Vec4{umin, umax, vmin, vmax},

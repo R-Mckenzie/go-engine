@@ -61,7 +61,7 @@ func LoadTilemap(tmxPath, atlasPath string, scale float32) Tilemap {
 }
 
 func atlasToTextures(filepath string, tileSize, atlasWidth, atlasHeight, tileCount int) []Texture {
-	image, err := LoadImage(filepath)
+	image, err := NewImage(filepath)
 	if err != nil {
 		panic(err)
 	}
@@ -71,7 +71,7 @@ func atlasToTextures(filepath string, tileSize, atlasWidth, atlasHeight, tileCou
 		col := float32((i % atlasWidth))
 		row := float32(i / atlasWidth)
 
-		texture := NewTextureFromAtlas(image, col*float32(tileSize), row*float32(tileSize), float32(tileSize), float32(tileSize))
+		texture := NewTextureFromAtlas(image, col*float32(tileSize), row*float32(tileSize), float32(tileSize), float32(tileSize), false)
 		textures = append(textures, texture)
 	}
 

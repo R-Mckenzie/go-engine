@@ -64,12 +64,34 @@ type testScene struct {
 	font    *engine.Font
 }
 
+var animator engine.Animator
+
 func newScene() *testScene {
 	p := NewPlayer()
 	tilemap := engine.LoadTilemap("res/test.tmx", "res/atlas.png", 2)
 	font, _ := engine.LoadFont("res/ProggyClean.ttf", 64)
 
 	engine.LoadSound("res/music.mp3", "bg")
+	engine.LoadSound("res/shot.mp3", "shot")
+
+	run, err := engine.NewImage("res/3 Dude_Monster/Dude_Monster_Run_6.png")
+	if err != nil {
+		panic(err)
+	}
+
+	idle, err := engine.NewImage("res/3 Dude_Monster/Dude_Monster_Idle_4.png")
+	if err != nil {
+		panic(err)
+	}
+
+	runRight := engine.NewAnimation(run, 5, 6, 1, 32, 32, false)
+	runLeft := engine.NewAnimation(run, 5, 6, 1, 32, 32, true)
+	idleAnim := engine.NewAnimation(idle, 4, 4, 1, 32, 32, false)
+
+	animator = engine.NewAnimator()
+	animator.Add(runRight, "run_right")
+	animator.Add(runLeft, "run_left")
+	animator.Add(idleAnim, "idle")
 
 	return &testScene{
 		p:       p,
@@ -78,8 +100,6 @@ func newScene() *testScene {
 		font:    font,
 	}
 }
-
-var isplaying bool = false
 
 func (s *testScene) Update() {
 	s.p.Update(s.tileMap)
@@ -101,14 +121,30 @@ func (s *testScene) Update() {
 		camY = mh - wh
 	}
 
-	if engine.Input().KeyUp(engine.KeyP) && !isplaying {
-		engine.LoopSound("bg")
-		isplaying = true
+	if engine.Input().KeyUp(engine.KeyP) {
+		engine.LoopSound("bg", -1)
+	}
+	if engine.Input().KeyUp(engine.KeyO) {
+		engine.PauseLoop("bg")
+	}
+	if engine.Input().KeyUp(engine.KeyI) {
+		engine.StopLoop("bg")
 	}
 
-	if engine.Input().KeyUp(engine.KeyO) && isplaying {
-		engine.StopLoop("bg")
-		isplaying = false
+	if engine.Input().KeyUp(engine.KeyV) {
+		engine.PlaySound("shot", 1)
+	}
+
+	if engine.Input().KeyDown(engine.KeyA) {
+		animator.Trigger("run_left")
+	} else if engine.Input().KeyDown(engine.KeyD) {
+		animator.Trigger("run_right")
+	} else {
+		animator.Trigger("idle")
+	}
+
+	if animator.Current.Changed {
+		s.p.Sprite.SetTexture(animator.Frame())
 	}
 
 	s.camera.SetPos(camX, camY)

@@ -1,19 +1,25 @@
 package engine
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"time"
 
 	"github.com/faiface/beep"
+	"github.com/faiface/beep/effects"
 	"github.com/faiface/beep/mp3"
 	"github.com/faiface/beep/speaker"
 )
 
+type gameSound struct {
+	ctrl *beep.Ctrl
+	vol  *effects.Volume
+}
+
 var soundBank map[string]beep.Buffer
 
-var playing []beep.StreamSeeker
-var looped map[string]beep.Streamer
+var looped map[string]*gameSound
 
 var isInitialised bool = false
 
@@ -22,7 +28,7 @@ func LoadSound(filepath, name string) {
 		log.Println("Sound already loaded: ", name)
 		return
 	}
-	f, err := os.Open("res/music.mp3")
+	f, err := os.Open(filepath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -34,8 +40,7 @@ func LoadSound(filepath, name string) {
 
 	if !isInitialised {
 		soundBank = make(map[string]beep.Buffer)
-		playing = make([]beep.StreamSeeker, 0, 10)
-		looped = make(map[string]beep.Streamer)
+		looped = make(map[string]*gameSound)
 		speaker.Init(format.SampleRate, format.SampleRate.N(time.Second/10))
 		isInitialised = true
 	}
@@ -46,52 +51,70 @@ func LoadSound(filepath, name string) {
 	soundBank[name] = buffer
 }
 
-func updateSound() {
-	toRemove := []int{}
-	for i, s := range playing {
-		if s.Position() >= s.Len() {
-			toRemove = append(toRemove, i)
+func PlaySound(name string, volume float64) {
+	sound, ok := soundBank[name]
+	if !ok {
+		log.Println("sound does not exist: ", name)
+		return
+	}
+
+	streamer := sound.Streamer(0, sound.Len())
+	vol := &effects.Volume{Streamer: streamer, Base: 2, Volume: volume, Silent: false}
+	speaker.Play(vol)
+}
+
+func LoopSound(name string, volume float64) {
+	fmt.Println("Loop Sound")
+	sound, ok := soundBank[name]
+	if !ok {
+		log.Println("sound does not exist: ", name)
+		return
+	}
+
+	existing, ok := looped[name]
+	if !ok {
+		fmt.Println("!exists")
+		streamer := sound.Streamer(0, sound.Len())
+		loop := beep.Loop(-1, streamer)
+		ctrl := &beep.Ctrl{Streamer: loop, Paused: false}
+		vol := &effects.Volume{
+			Streamer: ctrl,
+			Base:     10,
+			Volume:   volume,
+			Silent:   false,
 		}
+		looped[name] = &gameSound{ctrl: ctrl, vol: vol}
+		speaker.Play(looped[name].vol)
+	} else {
+		fmt.Println("exists")
+		speaker.Lock()
+		existing.ctrl.Paused = false
+		speaker.Unlock()
 	}
-	for _, i := range toRemove {
-		playing[i] = playing[len(playing)-1]
-		playing = playing[:len(playing)-1]
-	}
-}
-
-func LoopSound(name string) {
-	sound, ok := soundBank[name]
-	if !ok {
-		log.Println("sound does not exist: ", name)
-		return
-	}
-
-	streamer := sound.Streamer(0, sound.Len())
-	loop := beep.Loop(-1, streamer)
-	looped[name] = loop
-	speaker.Play(loop)
-}
-
-func PlaySound(name string) {
-	sound, ok := soundBank[name]
-	if !ok {
-		log.Println("sound does not exist: ", name)
-		return
-	}
-
-	streamer := sound.Streamer(0, sound.Len())
-	playing = append(playing, streamer)
-	speaker.Play(streamer)
 }
 
 func StopLoop(name string) {
-	_, ok := looped[name]
+	fmt.Println("Stop Loop")
+	loop, ok := looped[name]
 	if !ok {
 		log.Println("sound is not actively looping: ", name)
 		return
 	}
 	speaker.Lock()
+	loop.ctrl.Paused = true
+	speaker.Unlock()
 	delete(looped, name)
+}
+
+func PauseLoop(name string) {
+	loop, ok := looped[name]
+	if !ok {
+		log.Println("sound is not actively looping: ", name)
+		return
+	}
+
+	speaker.Lock()
+	loop.ctrl.Paused = true
 	speaker.Unlock()
 }
 
@@ -100,5 +123,6 @@ func ClearSounds() {
 }
 
 func close() {
+	ClearSounds()
 	speaker.Close()
 }
