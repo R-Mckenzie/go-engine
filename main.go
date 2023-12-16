@@ -30,10 +30,12 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
+	// Code for actually running the game
 	game := engine.CreateGame(width, height)
 	s := newScene()
 	game.SetScene(s)
 	game.Run()
+	// ==================================
 
 	// profiling
 	if *memprofile != "" {

@@ -32,6 +32,7 @@ func RemoveDebugInfo(label string) {
 }
 
 func displayDebug() {
+	imgui.SetNextWindowSize(imgui.ImVec2{X: 200, Y: 200}, imgui.ImGuiCond(imgui.ImGuiCond_FirstUseEver))
 	imgui.Begin("Stats", nil, 0)
 	imgui.PushItemWidth(-100)
 	k, v := debugLists()

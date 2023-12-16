@@ -51,7 +51,7 @@ func (renderer *imguiRenderer) createDeviceObjects() {
 		panic(err)
 	}
 
-	renderer.shaderHandle = uint32(shader)
+	renderer.shaderHandle = shader.id
 
 	renderer.attribLocationTex = gl.GetUniformLocation(renderer.shaderHandle, gl.Str("Texture"+"\x00"))
 	renderer.attribLocationProjMtx = gl.GetUniformLocation(renderer.shaderHandle, gl.Str("ProjMtx"+"\x00"))

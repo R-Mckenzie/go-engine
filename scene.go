@@ -59,7 +59,6 @@ func (p *Player) Update(t engine.Tilemap) {
 type testScene struct {
 	p       Player
 	camera  engine.Camera2D
-	tiles   []engine.Sprite
 	tileMap engine.Tilemap
 	font    *engine.Font
 }
@@ -84,9 +83,9 @@ func newScene() *testScene {
 		panic(err)
 	}
 
-	runRight := engine.NewAnimation(run, 5, 6, 1, 32, 32, false)
-	runLeft := engine.NewAnimation(run, 5, 6, 1, 32, 32, true)
-	idleAnim := engine.NewAnimation(idle, 4, 4, 1, 32, 32, false)
+	runRight := engine.NewAnimation(run, 7, 6, 1, 32, 32, false)
+	runLeft := engine.NewAnimation(run, 7, 6, 1, 32, 32, true)
+	idleAnim := engine.NewAnimation(idle, 7, 4, 1, 32, 32, false)
 
 	animator = engine.NewAnimator()
 	animator.Add(runRight, "run_right")
@@ -100,6 +99,8 @@ func newScene() *testScene {
 		font:    font,
 	}
 }
+
+var invOpen bool = false
 
 func (s *testScene) Update() {
 	s.p.Update(s.tileMap)
@@ -121,18 +122,18 @@ func (s *testScene) Update() {
 		camY = mh - wh
 	}
 
-	if engine.Input().KeyUp(engine.KeyP) {
+	if engine.Input().KeyOnce(engine.KeyP) {
 		engine.LoopSound("bg", -1)
 	}
-	if engine.Input().KeyUp(engine.KeyO) {
+	if engine.Input().KeyOnce(engine.KeyO) {
 		engine.PauseLoop("bg")
 	}
-	if engine.Input().KeyUp(engine.KeyI) {
-		engine.StopLoop("bg")
+	if engine.Input().KeyOnce(engine.KeyV) {
+		engine.PlaySound("shot", 1)
 	}
 
-	if engine.Input().KeyUp(engine.KeyV) {
-		engine.PlaySound("shot", 1)
+	if engine.Input().KeyOnce(engine.KeyI) {
+		invOpen = !invOpen
 	}
 
 	if engine.Input().KeyDown(engine.KeyA) {
@@ -149,7 +150,7 @@ func (s *testScene) Update() {
 
 	s.camera.SetPos(camX, camY)
 	engine.Renderer2D().BeginScene(s.camera)
-	engine.Renderer2D().PushItem(s.tileMap.RenderItem())
+	engine.Renderer2D().PushItem(s.tileMap.StaticRenderItem())
+	engine.Renderer2D().PushItem(s.tileMap.AnimatedRenderItem())
 	engine.Renderer2D().PushItem(s.p.RenderItem())
-	s.font.Print(100, 0, "Hello World")
 }

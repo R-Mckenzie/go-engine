@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"fmt"
 	"log"
 	"time"
 
@@ -19,7 +18,15 @@ type Sprite struct {
 }
 
 func NewSprite(width, height, x, y, z int, texture Texture) Sprite {
-	p, i := quad(float32(width), float32(height), texture.texCoords)
+	var p []float32
+	var i []uint32
+
+	if width == 1 && height == 1 {
+		p, i = screenQuad(float32(width), float32(height), mgl32.Vec4{0, 1, 0, 1})
+	} else {
+		p, i = quad(float32(width), float32(height), texture.texCoords)
+	}
+
 	var vbo, vao, ebo uint32
 
 	// Create GL objects
@@ -77,7 +84,19 @@ func quad(width, height float32, uv mgl32.Vec4) ([]float32, []uint32) {
 			-w2, -h2, 0.0, uv[0], uv[2],
 			w2, -h2, 0.0, uv[1], uv[2],
 			w2, h2, 0.0, uv[1], uv[3],
-			-h2, h2, 0.0, uv[0], uv[3],
+			-w2, h2, 0.0, uv[0], uv[3],
+		}, []uint32{ // indices
+			0, 1, 3,
+			1, 2, 3,
+		}
+}
+
+func screenQuad(w, h float32, uv mgl32.Vec4) ([]float32, []uint32) {
+	return []float32{ // vertices
+			-w, -h, 0.0, uv[0], uv[2],
+			w, -h, 0.0, uv[1], uv[2],
+			w, h, 0.0, uv[1], uv[3],
+			-w, h, 0.0, uv[0], uv[3],
 		}, []uint32{ // indices
 			0, 1, 3,
 			1, 2, 3,
@@ -139,8 +158,6 @@ func NewAnimation(sheet Image, fps, sheetWidth, sheetHeight, spriteWidth, sprite
 		row := float32(i / sheetWidth)
 		textures[i] = NewTextureFromAtlas(sheet, col*float32(spriteWidth), row*float32(spriteHeight), float32(spriteWidth), float32(spriteHeight), flipX)
 	}
-	fmt.Println(frames)
-	fmt.Println(textures)
 
 	animation := &Animation{
 		IsPlaying: false,

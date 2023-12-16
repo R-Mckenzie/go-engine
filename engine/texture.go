@@ -62,6 +62,24 @@ func NewImage(filepath string) (Image, error) {
 	}, nil
 }
 
+func NewBlankImage(width, height float32) Image {
+	var tex uint32
+	gl.GenTextures(1, &tex)
+	gl.BindTexture(gl.TEXTURE_2D, tex)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, int32(width), int32(height), 0, gl.RGBA, gl.UNSIGNED_BYTE, nil)
+
+	return Image{
+		id:     tex,
+		width:  width,
+		height: height,
+	}
+
+}
+
 func (t Image) Use() {
 	gl.BindTexture(gl.TEXTURE_2D, t.id)
 }
@@ -79,6 +97,13 @@ func NewTexture(filepath string) Texture {
 
 	return Texture{
 		image:     img,
+		texCoords: mgl32.Vec4{0, 1, 0, 1},
+	}
+}
+
+func NewBlankTexture(width, height float32) Texture {
+	return Texture{
+		image:     NewBlankImage(width, height),
 		texCoords: mgl32.Vec4{0, 1, 0, 1},
 	}
 }

@@ -1,6 +1,6 @@
 module github.com/R-Mckenzie/game-engine
 
-go 1.19
+go 1.21
 
 require (
 	github.com/AllenDang/cimgui-go v0.0.0-20230221110348-684d8294de59

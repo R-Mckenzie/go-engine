@@ -3,6 +3,7 @@ package engine
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"strings"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -14,7 +15,10 @@ const (
 	fragmentShaderSource = "shaders/fragmentShader.glsl"
 )
 
-type Shader uint32
+type Shader struct {
+	id       uint32
+	uniforms map[string]int32
+}
 
 func NewShader(vertexPath, fragmentPath string) (Shader, error) {
 	// Compile shader src
@@ -35,16 +39,16 @@ func NewShader(vertexPath, fragmentPath string) (Shader, error) {
 		gl.GetProgramiv(id, gl.INFO_LOG_LENGTH, &logLength)
 		log := strings.Repeat("\x00", int(logLength+1))
 		gl.GetProgramInfoLog(id, logLength, nil, gl.Str(log))
-		return 0, fmt.Errorf("shader linking error: %v", log)
+		return Shader{}, fmt.Errorf("shader linking error: %v", log)
 	}
 
 	gl.DeleteShader(vShader)
 	gl.DeleteShader(fShader)
-	return Shader(id), nil
+	return Shader{id, make(map[string]int32)}, nil
 }
 
 func (s Shader) Use() {
-	gl.UseProgram(uint32(s))
+	gl.UseProgram(s.id)
 }
 
 func (s Shader) SetBool(name string, value bool) {
@@ -75,9 +79,40 @@ func (s Shader) SetMatrix(name string, value mgl32.Mat4) {
 	gl.UniformMatrix4fv(s.UniformLoc(name), 1, false, &mat[0])
 }
 
-func (s Shader) UniformLoc(name string) int32 {
+func (s *Shader) UniformLoc(name string) int32 {
 	n := gl.Str(name + "\x00") // OpgenGL requires null termination character
-	return gl.GetUniformLocation(uint32(s), n)
+	loc, ok := s.uniforms[name]
+	if !ok {
+		s.uniforms[name] = gl.GetUniformLocation(s.id, n)
+	}
+
+	return loc
+}
+
+type PostShader interface {
+	use()
+}
+
+type DefaultPostShader struct {
+	shader Shader
+}
+
+func newDefaultPostShader() PostShader {
+	// Create and set default postprocessing shader
+	ps, err := NewShader("shaders/fbVertex.glsl", "shaders/fbFragment.glsl")
+	if err != nil {
+		log.Println("error loading shader")
+		panic(err)
+	}
+
+	ps.Use()
+	ps.SetInt("screenTexture", 0)
+
+	return DefaultPostShader{shader: ps}
+}
+
+func (dps DefaultPostShader) use() {
+	dps.shader.Use()
 }
 
 func compileShader(src string, shaderType uint32) (uint32, error) {

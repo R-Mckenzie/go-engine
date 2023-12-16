@@ -7,39 +7,36 @@ import (
 	"github.com/go-gl/glfw/v3.2/glfw"
 )
 
-type InputManager interface {
-	KeyDown(int) bool
-	KeyUp(int) bool
-
-	update()
-	setWindow(*window)
-	imguiPrepFrame(dt float32)
-	setImguiIO(io imgui.ImGuiIO)
-}
-
 type input struct {
-	window    *window
-	keysDown  *[KeyLast]bool
-	keysUp    *[KeyLast]bool
-	mouseDown *[3]bool
+	window      *window
+	keysDown    [KeyLast]bool
+	currentKeys [KeyLast]bool
+	keysOnce    [KeyLast]bool
+	keysUp      [KeyLast]bool
+	mouseDown   [3]bool
 
 	imguiIO imgui.ImGuiIO
 	time    float64
 }
 
 var inputOnce sync.Once
-var inputSingleton InputManager
+var inputSingleton *input
 
-func Input() InputManager {
+func Input() *input {
 	inputOnce.Do(func() {
 		keysDown := [KeyLast]bool{}
+		currentKeys := [KeyLast]bool{}
+		keysOnce := [KeyLast]bool{}
 		keysUp := [KeyLast]bool{}
 		mouseDown := [3]bool{}
+
 		inputSingleton = &input{
-			keysDown:  &keysDown,
-			keysUp:    &keysUp,
-			mouseDown: &mouseDown,
-			imguiIO:   imgui.GetIO(),
+			keysDown:    keysDown,
+			currentKeys: currentKeys,
+			keysOnce:    keysOnce,
+			keysUp:      keysUp,
+			mouseDown:   mouseDown,
+			imguiIO:     imgui.GetIO(),
 		}
 	})
 	return inputSingleton
@@ -89,6 +86,10 @@ func (i *input) KeyDown(key int) bool {
 	return i.keysDown[key]
 }
 
+func (i *input) KeyOnce(key int) bool {
+	return i.keysOnce[key]
+}
+
 func (i *input) KeyUp(key int) bool {
 	return i.keysUp[key]
 }
@@ -112,8 +113,12 @@ func (i *input) imguiPrepFrame(dt float32) {
 func (i *input) update() {
 	for x := 0; x < KeyLast; x++ {
 		i.keysUp[x] = false
+		i.keysOnce[x] = false
+		if i.keysDown[x] && !i.currentKeys[x] {
+			i.keysOnce[x] = true
+		}
+		i.currentKeys[x] = i.keysDown[x]
 	}
-
 }
 
 // List of all keyboard buttons.
