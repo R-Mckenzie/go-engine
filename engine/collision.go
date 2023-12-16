@@ -1,6 +1,6 @@
 package engine
 
-import ()
+import "log"
 
 type Collider struct {
 	width  int
@@ -57,8 +57,20 @@ func CollidesMapCollider(t Tilemap, c Collider) bool {
 	blx, bly := c.X, (c.Y + c.height)
 	brx, bry := (c.X + c.width), (c.Y + c.height)
 
-	if t.collision[getTileIndex(t, tlx, tly)] != -1 || t.collision[getTileIndex(t, trx, try)] != -1 || t.collision[getTileIndex(t, brx, bry)] != -1 || t.collision[getTileIndex(t, blx, bly)] != -1 {
+	// sometimes we were crashing because we tried to access out of bounds
+	p := getTileIndex(t, tlx, tly)
+	q := getTileIndex(t, trx, try)
+	r := getTileIndex(t, brx, bry)
+	s := getTileIndex(t, blx, bly)
+
+	if p > len(t.collision) || q > len(t.collision) || r > len(t.collision) || s > len(t.collision) {
+		log.Println("colliders out of bounds")
 		return true
 	}
+
+	if t.collision[p] != -1 || t.collision[q] != -1 || t.collision[r] != -1 || t.collision[s] != -1 {
+		return true
+	}
+
 	return false
 }
