@@ -20,7 +20,7 @@ type renderer struct {
 	lightBuffer  []Light
 	activeCam    Camera
 	projection   mgl32.Mat4
-	postShader   PostShader
+	postShader   Shader
 }
 
 type renderItem struct {
@@ -36,14 +36,31 @@ type Renderer interface {
 	PushItem(renderItem)
 	PushLight(Light)
 	PushUI(renderItem)
-	SetPostShader(PostShader)
+	SetPostShader(string)
 	render()
 }
 
 var rendererOnce sync.Once
 var rendererSingleton Renderer
-var defaultShader Shader
+
+var shaderMap map[string]Shader
+
+const (
+	DEFAULT_SHADER    = "default"
+	NO_POSTPROCESSING = "no postprocessing"
+)
+
 var fb frameBuffer
+
+func LoadShader(vertex, fragment, name string) {
+	shader, err := NewShader(vertex, fragment)
+	if err != nil {
+		log.Println("error loading shader. Default shader will be used instead")
+		shaderMap[name] = shaderMap[DEFAULT_SHADER]
+	}
+
+	shaderMap[name] = shader
+}
 
 func Renderer2DInit(width, height float32) {
 	rendererOnce.Do(func() {
@@ -53,7 +70,19 @@ func Renderer2DInit(width, height float32) {
 			log.Println("error loading shader")
 			panic(err)
 		}
-		defaultShader = ds
+
+		// Create and set default postprocessing shader
+		ps, err := NewShader("shaders/postprocessVertex.glsl", "shaders/postprocessFragment.glsl")
+		if err != nil {
+			log.Println("error loading shader")
+			panic(err)
+		}
+		ps.Use()
+		ps.SetInt("screenTexture", 0)
+
+		shaderMap = make(map[string]Shader)
+		shaderMap[DEFAULT_SHADER] = ds
+		shaderMap[NO_POSTPROCESSING] = ps
 
 		orthoProjection := mgl32.Ortho(0, width, height, 0, -0.1, 10.1)
 		r := renderer{
@@ -61,7 +90,7 @@ func Renderer2DInit(width, height float32) {
 			uiBuffer:     make(map[Image][]renderItem),
 			projection:   orthoProjection,
 			activeCam:    Camera2D{},
-			postShader:   newDefaultPostShader(),
+			postShader:   ps,
 		}
 
 		rendererSingleton = &r
@@ -72,10 +101,6 @@ func Renderer2DInit(width, height float32) {
 
 func Renderer2D() Renderer {
 	return rendererSingleton
-}
-
-func DefaultShader() Shader {
-	return defaultShader
 }
 
 func (r *renderer) BeginScene(c Camera) {
@@ -97,8 +122,13 @@ func (r *renderer) PushUI(ri renderItem) {
 	r.uiBuffer[ri.image] = append(r.uiBuffer[ri.image], ri)
 }
 
-func (r *renderer) SetPostShader(ps PostShader) {
-	r.postShader = ps
+func (r *renderer) SetPostShader(name string) {
+	shader, ok := shaderMap[name]
+	if !ok {
+		log.Printf("Could not find shader %q", name)
+		return
+	}
+	r.postShader = shader
 }
 
 func (r *renderer) PushBatch() {}
@@ -147,7 +177,7 @@ func (r *renderer) render() {
 
 	gl.Viewport(0, 0, int32(w*2), int32(h*2))
 
-	r.postShader.use()
+	r.postShader.Use()
 	gl.BindVertexArray(fb.sprite.vao)
 	gl.BindTexture(gl.TEXTURE_2D, fb.sprite.texture.image.id) // use the color attachment texture as the texture of the quad plane
 	gl.DrawElements(gl.TRIANGLES, fb.sprite.RenderItem().indices, gl.UNSIGNED_INT, nil)

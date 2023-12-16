@@ -3,7 +3,6 @@ package engine
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"strings"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -87,32 +86,6 @@ func (s *Shader) UniformLoc(name string) int32 {
 	}
 
 	return loc
-}
-
-type PostShader interface {
-	use()
-}
-
-type DefaultPostShader struct {
-	shader Shader
-}
-
-func newDefaultPostShader() PostShader {
-	// Create and set default postprocessing shader
-	ps, err := NewShader("shaders/fbVertex.glsl", "shaders/fbFragment.glsl")
-	if err != nil {
-		log.Println("error loading shader")
-		panic(err)
-	}
-
-	ps.Use()
-	ps.SetInt("screenTexture", 0)
-
-	return DefaultPostShader{shader: ps}
-}
-
-func (dps DefaultPostShader) use() {
-	dps.shader.Use()
 }
 
 func compileShader(src string, shaderType uint32) (uint32, error) {

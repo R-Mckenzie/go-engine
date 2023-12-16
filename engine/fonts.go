@@ -187,7 +187,7 @@ func (f *Font) Print(x, y float32, str string) {
 	renderItem := renderItem{
 		vao:       vao,
 		indices:   int32(len(indices)),
-		shader:    DefaultShader(),
+		shader:    shaderMap[DEFAULT_SHADER],
 		image:     f.atlas,
 		transform: NewTransform(int(x), int(y), 9),
 	}

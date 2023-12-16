@@ -71,7 +71,7 @@ func (s *Sprite) SetTexture(texture Texture) {
 func (s Sprite) RenderItem() renderItem {
 	return renderItem{
 		vao:       s.vao,
-		shader:    DefaultShader(),
+		shader:    shaderMap[DEFAULT_SHADER],
 		indices:   6,
 		transform: s.Transform,
 		image:     s.texture.image,
