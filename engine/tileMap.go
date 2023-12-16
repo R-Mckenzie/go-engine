@@ -137,7 +137,7 @@ func (t *Tilemap) renderItem(vaoID uint32) renderItem {
 		vao:       vaoID,
 		indices:   int32(t.width) * int32(t.height) * 6 * int32(len(t.staticLayers)),
 		image:     t.textures[0].image,
-		shader:    DefaultShader(),
+		shader:    shaderMap[DEFAULT_SHADER],
 		transform: NewTransform(0, 0, 0),
 	}
 }
