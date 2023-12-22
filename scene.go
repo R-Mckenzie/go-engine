@@ -3,18 +3,22 @@ package main
 import (
 	"github.com/R-Mckenzie/game-engine/engine"
 	"github.com/go-gl/mathgl/mgl32"
+
+	imgui "github.com/AllenDang/cimgui-go"
 )
 
 type Player struct {
 	engine.Sprite
-	c engine.Collider
+	c     engine.Collider
+	speed float32
 }
 
 func NewPlayer() Player {
 	texture := engine.NewTexture("res/man.png")
 	return Player{
-		Sprite: engine.NewSprite(64, 64, 500, 200, 5, texture),
+		Sprite: engine.NewSprite(64, 64, 500, 200, 5, texture, nil),
 		c:      engine.NewCollider(64, 64, 500, 200),
+		speed:  5,
 	}
 }
 
@@ -36,10 +40,8 @@ func (p *Player) Update(t engine.Tilemap) {
 		move = move.Normalize()
 	}
 
-	speed := float32(5.0)
-
 	oldPos := p.Pos
-	p.Pos[0] = p.Pos[0] + move[0]*speed
+	p.Pos[0] = p.Pos[0] + move[0]*p.speed
 	p.c = p.c.SetPos(int(p.Pos[0]), int(p.Pos[1]))
 	if engine.CollidesMapCollider(t, p.c) {
 		p.Pos = oldPos
@@ -47,7 +49,7 @@ func (p *Player) Update(t engine.Tilemap) {
 	}
 
 	oldPos = p.Pos
-	p.Pos[1] = p.Pos[1] + move[1]*speed
+	p.Pos[1] = p.Pos[1] + move[1]*p.speed
 	p.c = p.c.SetPos(int(p.Pos[0]), int(p.Pos[1]))
 	if engine.CollidesMapCollider(t, p.c) {
 		p.Pos = oldPos
@@ -67,7 +69,7 @@ var animator engine.Animator
 
 func newScene() *testScene {
 	p := NewPlayer()
-	tilemap := engine.LoadTilemap("res/test.tmx", "res/atlas.png", 2)
+	tilemap := engine.LoadTilemap("res/test.tmx", "res/atlas.png", "res/atlas_n.png", 2)
 	font, _ := engine.LoadFont("res/ProggyClean.ttf", 64)
 
 	engine.LoadSound("res/music.mp3", "bg")
@@ -92,6 +94,8 @@ func newScene() *testScene {
 	animator.Add(runLeft, "run_left")
 	animator.Add(idleAnim, "idle")
 
+	engine.LoadShader("shaders/postprocessVertex.glsl", "shaders/funkyEdgesFragment.glsl", "funky lines")
+
 	return &testScene{
 		p:       p,
 		tileMap: tilemap,
@@ -101,6 +105,10 @@ func newScene() *testScene {
 }
 
 var invOpen bool = false
+var isfunky = false
+
+var r, g, b float32 = 0.3, 0.3, 0.3
+var intensity int32 = 30
 
 func (s *testScene) Update() {
 	s.p.Update(s.tileMap)
@@ -136,6 +144,16 @@ func (s *testScene) Update() {
 		invOpen = !invOpen
 	}
 
+	if engine.Input().KeyOnce(engine.KeyC) {
+		if isfunky {
+			engine.Renderer2D().SetPostShader("null")
+			isfunky = !isfunky
+		} else {
+			engine.Renderer2D().SetPostShader("funky lines")
+			isfunky = !isfunky
+		}
+	}
+
 	if engine.Input().KeyDown(engine.KeyA) {
 		animator.Trigger("run_left")
 	} else if engine.Input().KeyDown(engine.KeyD) {
@@ -149,8 +167,21 @@ func (s *testScene) Update() {
 	}
 
 	s.camera.SetPos(camX, camY)
-	engine.Renderer2D().BeginScene(s.camera)
+	engine.Renderer2D().BeginScene(s.camera, mgl32.Vec3{r, g, b})
 	engine.Renderer2D().PushItem(s.tileMap.StaticRenderItem())
 	engine.Renderer2D().PushItem(s.tileMap.AnimatedRenderItem())
 	engine.Renderer2D().PushItem(s.p.RenderItem())
+	engine.Renderer2D().PushLight(engine.Light{Transform: engine.NewTransform(int(s.p.Pos[0]), int(s.p.Pos[1]), 5), Colour: mgl32.Vec3{}, Radius: 10})
+}
+
+func (s *testScene) DebugGUI() {
+	imgui.SetNextWindowSize(imgui.ImVec2{X: 400, Y: 200}, imgui.ImGuiCond(imgui.ImGuiCond_FirstUseEver))
+	imgui.Begin("SCENE DATA", nil, 0)
+	if imgui.Button("shoot", imgui.NewImVec2(0, 0)) {
+		engine.PlaySound("shot", 1)
+	}
+	imgui.ColorEdit3("lighting", [3]*float32{&r, &g, &b}, 0)
+	imgui.SliderFloat("speed", &s.p.speed, 1, 10, "%.3f", 0)
+	imgui.SliderInt("intensity", &intensity, 1, 200, "%d", 0)
+	imgui.End()
 }

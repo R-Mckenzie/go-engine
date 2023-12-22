@@ -63,7 +63,7 @@ func CollidesMapCollider(t Tilemap, c Collider) bool {
 	r := getTileIndex(t, brx, bry)
 	s := getTileIndex(t, blx, bly)
 
-	if p > len(t.collision) || q > len(t.collision) || r > len(t.collision) || s > len(t.collision) {
+	if p >= len(t.collision) || q >= len(t.collision) || r >= len(t.collision) || s >= len(t.collision) {
 		log.Println("colliders out of bounds")
 		return true
 	}

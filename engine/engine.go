@@ -15,15 +15,18 @@ const (
 	idealDelta = time.Second / updatesPS
 )
 
-type Entity interface {
+type Scene interface {
 	Update()
+	DebugGUI()
 }
 
 type Game struct {
 	window *window
 	imgui  *imguiRenderer
-	scene  Entity
+	scene  Scene
 }
+
+var DispW, DispH float32
 
 var ctx imgui.ImGuiContext
 
@@ -44,7 +47,7 @@ func CreateGame(width, height float32) *Game {
 	gl.Viewport(0, 0, int32(width), int32(height))
 	gl.Enable(gl.DEPTH_TEST)
 	gl.Enable(gl.BLEND)
-	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+	gl.Enable(gl.DEBUG_OUTPUT)
 	gl.DepthFunc(gl.LESS)
 	gl.ClearColor(0.5, 0.5, 1, 1)
 
@@ -54,10 +57,13 @@ func CreateGame(width, height float32) *Game {
 	// Init imgui renderer
 	imguiRenderer := NewImguiRenderer()
 
+	DispW, DispH = width, height
+
 	game := &Game{
 		window: win,
 		imgui:  imguiRenderer,
 	}
+
 	return game
 }
 
@@ -103,6 +109,7 @@ func (g *Game) Run() {
 
 		// Imgui
 		displayDebug()
+		g.scene.DebugGUI()
 		imgui.Render()
 		g.imgui.Render(g.window.getSize(), g.window.getFramebuffer(), imgui.GetDrawData())
 		g.window.redraw()
@@ -121,7 +128,7 @@ func (g *Game) Run() {
 	g.Quit()
 }
 
-func (g *Game) SetScene(s Entity) {
+func (g *Game) SetScene(s Scene) {
 	g.scene = s
 }
 
@@ -130,7 +137,6 @@ func (g *Game) update() {
 		g.window.win.SetShouldClose(true)
 	}
 	g.scene.Update()
-
 }
 
 func (g *Game) Quit() {

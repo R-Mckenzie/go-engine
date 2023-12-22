@@ -3,6 +3,7 @@ package engine
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"strings"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -19,10 +20,29 @@ type Shader struct {
 	uniforms map[string]int32
 }
 
+var shaderMap map[string]Shader
+
+func loadShader(vertex, fragment string) Shader {
+	shader, err := NewShader(vertex, fragment)
+	if err != nil {
+		log.Println("error loading shader. Default shader will be used instead")
+	}
+	return shader
+}
+
+func LoadShader(vertex, fragment, name string) {
+	shader, err := NewShader(vertex, fragment)
+	if err != nil {
+		log.Println("error loading shader.")
+	}
+
+	shaderMap[name] = shader
+}
+
 func NewShader(vertexPath, fragmentPath string) (Shader, error) {
 	// Compile shader src
-	vShader := loadShader(vertexPath, gl.VERTEX_SHADER)
-	fShader := loadShader(fragmentPath, gl.FRAGMENT_SHADER)
+	vShader := loadShaderFile(vertexPath, gl.VERTEX_SHADER)
+	fShader := loadShaderFile(fragmentPath, gl.FRAGMENT_SHADER)
 
 	// Create program and bind shaders
 	id := gl.CreateProgram()
@@ -66,11 +86,32 @@ func (s Shader) SetFloat(name string, v float32) {
 	gl.Uniform1f(s.UniformLoc(name), v)
 }
 
+func (s Shader) SetFloatArray(name string, i int32, v []float32) {
+	gl.Uniform1fv(s.UniformLoc(name), i, &v[0])
+}
+
 func (s Shader) SetVec2(name string, v mgl32.Vec2) {
 	gl.Uniform2f(s.UniformLoc(name), v[0], v[1])
 }
+
+func (s Shader) SetVec2Array(name string, i int32, v []float32) {
+	gl.Uniform2fv(s.UniformLoc(name), i, &v[0])
+}
+
+func (s Shader) SetVec3(name string, v mgl32.Vec3) {
+	gl.Uniform3f(s.UniformLoc(name), v[0], v[1], v[2])
+}
+
+func (s Shader) SetVec3Array(name string, i int32, v []float32) {
+	gl.Uniform2fv(s.UniformLoc(name), i, &v[0])
+}
+
 func (s Shader) SetVec4(name string, v mgl32.Vec4) {
 	gl.Uniform4f(s.UniformLoc(name), v[0], v[1], v[2], v[3])
+}
+
+func (s Shader) SetVec4Array(name string, i int32, v []float32) {
+	gl.Uniform4fv(s.UniformLoc(name), i, &v[0])
 }
 
 func (s Shader) SetMatrix(name string, value mgl32.Mat4) {
@@ -107,7 +148,7 @@ func compileShader(src string, shaderType uint32) (uint32, error) {
 	return shader, nil
 }
 
-func loadShader(filepath string, sType uint32) uint32 {
+func loadShaderFile(filepath string, sType uint32) uint32 {
 	src := readFile(filepath)
 	shader, err := compileShader(src, sType)
 	if err != nil {

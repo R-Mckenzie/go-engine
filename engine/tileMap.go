@@ -16,6 +16,8 @@ type Tilemap struct {
 	animatedTiles  map[int][]int // Key is tile index, value is slice of frames
 	collision      []int         // Anything not -1 represents a collider
 	textures       []Texture
+	normals        []Texture
+	useNormals     bool
 	staticVAO      uint32
 	animatedVAO    uint32
 	animatedVBO    uint32
@@ -26,7 +28,8 @@ type Tilemap struct {
 var tilemapShader *Shader
 
 // Assumes a square texture atlas
-func LoadTilemap(tmxPath, atlasPath string, scale float32) Tilemap {
+// if no normalPath is specified, we don't draw with normal mapping
+func LoadTilemap(tmxPath, atlasPath string, normalPath string, scale float32) Tilemap {
 	m, err := tiled.LoadFile(tmxPath)
 	if err != nil {
 		panic(err)
@@ -34,6 +37,11 @@ func LoadTilemap(tmxPath, atlasPath string, scale float32) Tilemap {
 
 	// Load the textures from the given atlas
 	textures := atlasToTextures(atlasPath, m.TileHeight, m.Tilesets[0].Columns, m.Tilesets[0].Columns, m.Tilesets[0].TileCount)
+
+	var normals []Texture = nil
+	if normalPath != "" {
+		normals = atlasToTextures(normalPath, m.TileHeight, m.Tilesets[0].Columns, m.Tilesets[0].Columns, m.Tilesets[0].TileCount)
+	}
 
 	// Build up a list of all animated tile IDs and their frames.
 	animatedTiles := make(map[int][]int)
@@ -87,6 +95,8 @@ func LoadTilemap(tmxPath, atlasPath string, scale float32) Tilemap {
 		animatedLayers: animated,
 		staticLayers:   static,
 		textures:       textures,
+		normals:        normals,
+		useNormals:     normals != nil,
 		collision:      collisionLayer,
 		changed:        &changed,
 		animIndex:      &i,
@@ -134,11 +144,12 @@ func atlasToTextures(filepath string, tileSize, atlasWidth, atlasHeight, tileCou
 
 func (t *Tilemap) renderItem(vaoID uint32) renderItem {
 	return renderItem{
-		vao:       vaoID,
-		indices:   int32(t.width) * int32(t.height) * 6 * int32(len(t.staticLayers)),
-		image:     t.textures[0].image,
-		shader:    shaderMap[DEFAULT_SHADER],
-		transform: NewTransform(0, 0, 0),
+		vao:        vaoID,
+		indices:    int32(t.width) * int32(t.height) * 6 * int32(len(t.staticLayers)),
+		image:      t.textures[0].image,
+		normals:    t.normals[0].image,
+		useNormals: t.normals != nil,
+		transform:  NewTransform(0, 0, 0),
 	}
 }
 
@@ -157,9 +168,11 @@ func (t *Tilemap) StaticRenderItem() renderItem {
 }
 
 func (t *Tilemap) vertices(tick int, animated bool) ([]float32, []uint32) {
-	layers := t.staticLayers
+	var layers [][]int
 	if animated {
 		layers = t.animatedLayers
+	} else {
+		layers = t.staticLayers
 	}
 
 	tiles := t.width * t.height
