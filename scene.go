@@ -109,6 +109,7 @@ var isfunky = false
 
 var r, g, b float32 = 0.3, 0.3, 0.3
 var intensity int32 = 30
+var exposure float32 = 1
 
 func (s *testScene) Update() {
 	s.p.Update(s.tileMap)
@@ -167,11 +168,14 @@ func (s *testScene) Update() {
 	}
 
 	s.camera.SetPos(camX, camY)
+	engine.Renderer2D().SetExposure(exposure)
 	engine.Renderer2D().BeginScene(s.camera, mgl32.Vec3{r, g, b})
 	engine.Renderer2D().PushItem(s.tileMap.StaticRenderItem())
 	engine.Renderer2D().PushItem(s.tileMap.AnimatedRenderItem())
 	engine.Renderer2D().PushItem(s.p.RenderItem())
-	engine.Renderer2D().PushLight(engine.Light{Transform: engine.NewTransform(int(s.p.Pos[0]), int(s.p.Pos[1]), 5), Colour: mgl32.Vec3{}, Radius: 10})
+	engine.Renderer2D().PushLight(engine.NewLight(s.p.Pos[0], s.p.Pos[1], 80, 1, 1, 1, 1))
+	engine.Renderer2D().PushLight(engine.NewLight(600, 400, 50, 1, 0, 0, 1))
+	engine.Renderer2D().PushLight(engine.NewLight(600, 600, 50, 0, 0, 1, 1))
 }
 
 func (s *testScene) DebugGUI() {
@@ -182,6 +186,7 @@ func (s *testScene) DebugGUI() {
 	}
 	imgui.ColorEdit3("lighting", [3]*float32{&r, &g, &b}, 0)
 	imgui.SliderFloat("speed", &s.p.speed, 1, 10, "%.3f", 0)
+	imgui.SliderFloat("exposure", &exposure, 0, 10, "%.3f", 0)
 	imgui.SliderInt("intensity", &intensity, 1, 200, "%d", 0)
 	imgui.End()
 }

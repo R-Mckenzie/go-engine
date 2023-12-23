@@ -8,9 +8,9 @@ type Transform struct {
 	Rot   mgl32.Vec3
 }
 
-func NewTransform(xP, yP, zP int) Transform {
+func NewTransform(xP, yP, zP float32) Transform {
 	return Transform{
-		Pos:   mgl32.Vec3{float32(xP), float32(yP), float32(zP)},
+		Pos:   mgl32.Vec3{xP, yP, zP},
 		Rot:   mgl32.Vec3{0, 0, 0},
 		Scale: mgl32.Vec3{1, 1, 1},
 	}

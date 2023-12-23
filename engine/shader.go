@@ -103,7 +103,7 @@ func (s Shader) SetVec3(name string, v mgl32.Vec3) {
 }
 
 func (s Shader) SetVec3Array(name string, i int32, v []float32) {
-	gl.Uniform2fv(s.UniformLoc(name), i, &v[0])
+	gl.Uniform3fv(s.UniformLoc(name), i, &v[0])
 }
 
 func (s Shader) SetVec4(name string, v mgl32.Vec4) {

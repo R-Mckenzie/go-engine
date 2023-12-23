@@ -1,14 +1,13 @@
 package engine
 
 import (
-	"log"
 	"sync"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-const MAX_LIGHTS = 50
+const MAX_LIGHTS = 15
 
 type renderer struct {
 	renderBuffer map[Image][]renderItem
@@ -20,6 +19,7 @@ type renderer struct {
 	lights       []Light
 	lightingFB   frameBuffer
 	postFB       frameBuffer
+	exposure     float32
 
 	screenTransform Transform
 }
@@ -40,6 +40,7 @@ type Renderer interface {
 	PushLight(Light)
 	PushUI(renderItem)
 	SetPostShader(string)
+	SetExposure(float32)
 	render()
 }
 
@@ -87,12 +88,13 @@ func Renderer2DInit(width, height float32) {
 
 		orthoProjection := mgl32.Ortho(0, width, height, 0, -0.1, 10.1)
 		r := renderer{
-			renderBuffer:    make(map[Image][]renderItem),
-			uiBuffer:        make(map[Image][]renderItem),
-			projection:      orthoProjection,
-			activeCam:       Camera2D{},
-			postShader:      postShader.Shader,
-			postFB:          fb,
+			renderBuffer: make(map[Image][]renderItem),
+			uiBuffer:     make(map[Image][]renderItem),
+			projection:   orthoProjection,
+			activeCam:    Camera2D{},
+			postShader:   postShader.Shader,
+			postFB:       fb,
+
 			lightingFB:      lb,
 			ambientLight:    mgl32.Vec3{1, 1, 1},
 			screenTransform: transform,
@@ -102,8 +104,40 @@ func Renderer2DInit(width, height float32) {
 	})
 }
 
+func (r *renderer) SetExposure(e float32) {
+	r.exposure = e
+
+	r.postShader.Use()
+	r.postShader.SetFloat("exposure", e)
+}
+
 func Renderer2D() Renderer {
 	return rendererSingleton
+}
+
+func pushLightUniforms(lights []Light, view, projection mgl32.Mat4) {
+	var positions []float32 // vec3
+	var falloffs []float32  // vec3
+	var colours []float32   // vec4
+
+	for i := 0; i < MAX_LIGHTS; i++ {
+		if i < len(lights) {
+			light := lights[i]
+			position := light.position(view, projection)
+
+			positions = append(positions, position[0], position[1], position[2])
+			falloffs = append(falloffs, light.Falloffs[0], light.Falloffs[1], light.Falloffs[2])
+			colours = append(colours, light.Colour[0], light.Colour[1], light.Colour[2], light.Colour[3])
+		} else {
+			positions = append(positions, 0, 0, 0)
+			falloffs = append(falloffs, 0, 0, 0)
+			colours = append(colours, 0, 0, 0, 0)
+		}
+	}
+
+	objectShader.SetVec3Array("LightPos", MAX_LIGHTS, positions)
+	objectShader.SetVec4Array("LightColor", MAX_LIGHTS, colours)
+	objectShader.SetVec3Array("Falloff", MAX_LIGHTS, falloffs)
 }
 
 func (r *renderer) BeginScene(c Camera, ambientLight mgl32.Vec3) {
@@ -117,8 +151,6 @@ func (r *renderer) BeginScene(c Camera, ambientLight mgl32.Vec3) {
 	objectShader.SetInt("u_texture", 0) //GL_TEXTURE0
 	objectShader.SetInt("u_normals", 1) //GL_TEXTURE1
 	objectShader.SetVec4("AmbientColor", r.ambientLight.Vec4(1))
-	objectShader.SetVec4("LightColor", mgl32.Vec4{1, 0.7, 0.7, 1})
-	objectShader.SetVec3("Falloff", mgl32.Vec3{1, 0.5, 0.3})
 	objectShader.SetVec2("Resolution", mgl32.Vec2{DispW, DispH})
 }
 
@@ -137,7 +169,6 @@ func (r *renderer) PushUI(ri renderItem) {
 func (r *renderer) SetPostShader(name string) {
 	shader, ok := shaderMap[name]
 	if !ok {
-		log.Printf("Could not find shader %q", name)
 		r.postShader = postShader.Shader
 		return
 	}
@@ -152,26 +183,15 @@ func (r *renderer) render() {
 	r.postFB.use()
 	gl.Enable(gl.DEPTH_TEST)
 	gl.Disable(gl.BLEND)
-	gl.ClearColor(1, 1, 1, 1)
+	gl.ClearColor(0, 0, 0, 1)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 	w, h := WindowSize()
 
-	var lightPos mgl32.Vec3
-	if len(r.lights) > 0 {
-		lightPos = r.lights[0].Transform.Pos
-
-		lightPos = r.projection.Mul4x1(lightPos.Vec4(1)).Vec3()
-		lightPos = r.activeCam.ViewMatrix().Mul4x1(lightPos.Vec4(1)).Vec3()
-		lightPos = GetMatrix(r.lights[0].Transform).Mul4x1(lightPos.Vec4(1)).Vec3()
-
-		lightPos[1] = DispH - lightPos[1]
-		lightPos[2] = 100
-	}
-
-	objectShader.SetVec3("LightPos", lightPos)
-
 	objectShader.Use()
+
+	pushLightUniforms(r.lights, r.activeCam.ViewMatrix(), r.projection)
+
 	for _, v := range r.renderBuffer {
 		gl.ActiveTexture(gl.TEXTURE0)
 		v[0].image.Use()
@@ -212,7 +232,6 @@ func (r *renderer) render() {
 
 	r.postShader.Use()
 	r.postShader.SetInt("u_texture", 0) //GL_TEXTURE0
-
 	r.postFB.tex.image.Use()
 	gl.BindVertexArray(screenVAO)
 	gl.BindTexture(gl.TEXTURE_2D, r.postFB.tex.image.id)

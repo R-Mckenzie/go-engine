@@ -188,7 +188,7 @@ func (f *Font) Print(x, y float32, str string) {
 		vao:       vao,
 		indices:   int32(len(indices)),
 		image:     f.atlas,
-		transform: NewTransform(int(x), int(y), 9),
+		transform: NewTransform(x, y, 9),
 	}
 
 	f.renderItems[str] = renderItem

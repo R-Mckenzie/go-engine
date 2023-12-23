@@ -9,8 +9,8 @@ import (
 
 type Sprite struct {
 	Transform
-	Width   int
-	Height  int
+	Width   float32
+	Height  float32
 	vao     uint32
 	vbo     uint32
 	texture Texture
@@ -18,8 +18,8 @@ type Sprite struct {
 }
 
 // normal can be nil
-func NewSprite(width, height, x, y, z int, texture Texture, normal *Texture) Sprite {
-	vao, vbo, _ := newQuadVAO(float32(width), float32(height), texture.texCoords)
+func NewSprite(width, height, x, y, z float32, texture Texture, normal *Texture) Sprite {
+	vao, vbo, _ := newQuadVAO(width, height, texture.texCoords)
 
 	return Sprite{
 		Width:     width,
