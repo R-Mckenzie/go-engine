@@ -17,7 +17,8 @@ func NewLight(x, y, z, r, g, b float32, intensity float32) Light {
 	return Light{
 		transform: transform,
 		Colour:    colour,
-		Falloffs:  mgl32.Vec3{0.3, 4, 20},
+		Falloffs:  mgl32.Vec3{0.3, 0.5, 1},
+		// Falloffs:  mgl32.Vec3{0.3, 4, 20},
 	}
 }
 

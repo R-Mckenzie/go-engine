@@ -135,9 +135,9 @@ func pushLightUniforms(lights []Light, view, projection mgl32.Mat4) {
 		}
 	}
 
-	objectShader.SetVec3Array("LightPos", MAX_LIGHTS, positions)
-	objectShader.SetVec4Array("LightColor", MAX_LIGHTS, colours)
-	objectShader.SetVec3Array("Falloff", MAX_LIGHTS, falloffs)
+	objectShader.SetVec3Array("lightPos", MAX_LIGHTS, positions)
+	objectShader.SetVec4Array("lightColour", MAX_LIGHTS, colours)
+	objectShader.SetVec3Array("falloff", MAX_LIGHTS, falloffs)
 }
 
 func (r *renderer) BeginScene(c Camera, ambientLight mgl32.Vec3) {
@@ -150,8 +150,7 @@ func (r *renderer) BeginScene(c Camera, ambientLight mgl32.Vec3) {
 	objectShader.Use()
 	objectShader.SetInt("u_texture", 0) //GL_TEXTURE0
 	objectShader.SetInt("u_normals", 1) //GL_TEXTURE1
-	objectShader.SetVec4("AmbientColor", r.ambientLight.Vec4(1))
-	objectShader.SetVec2("Resolution", mgl32.Vec2{DispW, DispH})
+	objectShader.SetVec4("ambientLight", r.ambientLight.Vec4(1))
 }
 
 func (r *renderer) PushItem(ri renderItem) {
@@ -198,11 +197,11 @@ func (r *renderer) render() {
 		for _, ri := range v {
 			if ri.useNormals {
 				// load normal uniforms
-				objectShader.SetBool("UseNormals", true)
+				objectShader.SetBool("useNormals", true)
 				gl.ActiveTexture(gl.TEXTURE1)
 				ri.normals.Use()
 			} else {
-				objectShader.SetBool("UseNormals", false)
+				objectShader.SetBool("useNormals", false)
 			}
 
 			objectShader.loadUniforms(GetMatrix(ri.transform), r.activeCam.ViewMatrix(), r.projection)
@@ -212,17 +211,17 @@ func (r *renderer) render() {
 		}
 	}
 
-	// Render UI on top
-	// objectShader.Use()
-	// for _, v := range r.uiBuffer {
-	// 	gl.ActiveTexture(gl.TEXTURE0)
-	// 	v[0].image.Use()
-	// 	for _, ri := range v {
-	// 		objectShader.loadUniforms(mgl32.Ident4(), mgl32.Ident4(), r.projection)
-	// 		gl.BindVertexArray(ri.vao)
-	// 		gl.DrawElements(gl.TRIANGLES, ri.indices, gl.UNSIGNED_INT, nil)
-	// 	}
-	// }
+	//Render UI on top
+	objectShader.Use()
+	for _, v := range r.uiBuffer {
+		gl.ActiveTexture(gl.TEXTURE0)
+		v[0].image.Use()
+		for _, ri := range v {
+			objectShader.loadUniforms(mgl32.Ident4(), mgl32.Ident4(), r.projection)
+			gl.BindVertexArray(ri.vao)
+			gl.DrawElements(gl.TRIANGLES, ri.indices, gl.UNSIGNED_INT, nil)
+		}
+	}
 
 	// now bind back to default framebuffer and draw a quad plane with the attached framebuffer color texture
 	gl.BindFramebuffer(gl.FRAMEBUFFER, 0)

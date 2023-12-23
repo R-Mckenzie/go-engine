@@ -173,7 +173,7 @@ func (s *testScene) Update() {
 	engine.Renderer2D().PushItem(s.tileMap.StaticRenderItem())
 	engine.Renderer2D().PushItem(s.tileMap.AnimatedRenderItem())
 	engine.Renderer2D().PushItem(s.p.RenderItem())
-	engine.Renderer2D().PushLight(engine.NewLight(s.p.Pos[0], s.p.Pos[1], 80, 1, 1, 1, 1))
+	engine.Renderer2D().PushLight(engine.NewLight(s.p.Pos[0], s.p.Pos[1], 50, 1, 1, 1, 1))
 	engine.Renderer2D().PushLight(engine.NewLight(600, 400, 50, 1, 0, 0, 1))
 	engine.Renderer2D().PushLight(engine.NewLight(600, 600, 50, 0, 0, 1, 1))
 }
