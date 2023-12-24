@@ -26,7 +26,8 @@ type Game struct {
 	scene  Scene
 }
 
-var DispW, DispH float32
+var ScreenW, ScreenH float32
+var dispW, dispH float32
 
 var ctx imgui.ImGuiContext
 
@@ -57,7 +58,8 @@ func CreateGame(width, height float32) *Game {
 	// Init imgui renderer
 	imguiRenderer := NewImguiRenderer()
 
-	DispW, DispH = width, height
+	dispW, dispH = width, height
+	ScreenW, ScreenH = width, height
 
 	game := &Game{
 		window: win,
@@ -88,6 +90,7 @@ func (g *Game) Run() {
 	var acc float64 //LAG
 
 	for {
+		dispW, dispH = g.window.getSize()
 		delta := time.Since(prev).Seconds()
 		prev = time.Now()
 		acc += delta
@@ -111,7 +114,7 @@ func (g *Game) Run() {
 		displayDebug()
 		g.scene.DebugGUI()
 		imgui.Render()
-		g.imgui.Render(g.window.getSize(), g.window.getFramebuffer(), imgui.GetDrawData())
+		g.imgui.Render(dispW, dispH, g.window.getFramebuffer(), imgui.GetDrawData())
 		g.window.redraw()
 
 		fps++

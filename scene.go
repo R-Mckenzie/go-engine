@@ -116,7 +116,6 @@ func (s *testScene) Update() {
 	camX, camY := int(s.p.Pos[0]-400), int(s.p.Pos[1]-300)
 
 	mw, mh := s.tileMap.PixelSize()
-	ww, wh := engine.WindowSize()
 
 	if camX < 0 {
 		camX = 0
@@ -124,11 +123,11 @@ func (s *testScene) Update() {
 	if camY < 0 {
 		camY = 0
 	}
-	if camX+ww > mw {
-		camX = mw - ww
+	if camX+int(engine.ScreenW) > mw {
+		camX = mw - int(engine.ScreenW)
 	}
-	if camY+wh > mh {
-		camY = mh - wh
+	if camY+int(engine.ScreenH) > mh {
+		camY = mh - int(engine.ScreenH)
 	}
 
 	if engine.Input().KeyOnce(engine.KeyP) {

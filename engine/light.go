@@ -26,6 +26,6 @@ func (l Light) position(view, projection mgl32.Mat4) mgl32.Vec3 {
 	pos := projection.Mul4x1(l.transform.Pos.Vec4(1))
 	pos = view.Mul4x1(pos)
 	pos = GetMatrix(l.transform).Mul4x1(pos)
-	pos[1] = DispH - pos[1]
+	pos[1] = ScreenH - pos[1]
 	return pos.Vec3()
 }

@@ -23,7 +23,7 @@ func createWindow(width, height int) *window {
 	}
 	log.Println("Initialised glfw")
 
-	glfw.WindowHint(glfw.Resizable, glfw.False)
+	glfw.WindowHint(glfw.Resizable, glfw.True)
 	glfw.WindowHint(glfw.ContextVersionMajor, 4)
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
@@ -33,22 +33,30 @@ func createWindow(width, height int) *window {
 	if err != nil {
 		panic(err)
 	}
-	win.MakeContextCurrent()
-	glfw.SwapInterval(0)
 
-	log.Println("Created window")
-	return &window{
+	gameWindow := &window{
 		win:         win,
 		Width:       width,
 		Height:      height,
 		windowMoved: false,
 		moveDir:     1,
 	}
+
+	win.SetSizeCallback(func(win *glfw.Window, width, height int) {
+		gameWindow.Width = width
+		gameWindow.Height = height
+	})
+
+	win.MakeContextCurrent()
+	glfw.SwapInterval(0)
+
+	log.Println("Created window")
+	return gameWindow
 }
 
-func (w *window) getSize() [2]float32 {
+func (w *window) getSize() (float32, float32) {
 	width, height := w.win.GetSize()
-	return [2]float32{float32(width), float32(height)}
+	return float32(width), float32(height)
 }
 
 func (w *window) getFramebuffer() [2]float32 {

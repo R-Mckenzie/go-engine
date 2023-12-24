@@ -185,8 +185,6 @@ func (r *renderer) render() {
 	gl.ClearColor(0, 0, 0, 1)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-	w, h := WindowSize()
-
 	objectShader.Use()
 
 	pushLightUniforms(r.lights, r.activeCam.ViewMatrix(), r.projection)
@@ -227,7 +225,7 @@ func (r *renderer) render() {
 	gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
 	gl.Disable(gl.DEPTH_TEST) // disable depth test so screen-space quad isn't discarded due to depth test.
 	gl.Clear(gl.COLOR_BUFFER_BIT)
-	gl.Viewport(0, 0, int32(w*2), int32(h*2))
+	gl.Viewport(0, 0, int32(dispW*2), int32(dispH*2))
 
 	r.postShader.Use()
 	r.postShader.SetInt("u_texture", 0) //GL_TEXTURE0

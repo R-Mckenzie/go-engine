@@ -19,13 +19,13 @@ uniform vec4 lightColour[MAX_LIGHTS];      //light RGBA -- alpha is intensity
 uniform vec3 falloff[MAX_LIGHTS];         //attenuation coefficients
 
 void main() {
-	vec4 diffuseColour = texture(u_texture, vTexCoord);
+	vec4 diffuseColour = texture(u_texture, texCoord);
 	if (diffuseColour.a < 0.1)
 		discard;
 
 	vec3 normalMap;
 	if (useNormals) {
-		normalMap = texture(u_normals, vTexCoord).rgb;
+		normalMap = texture(u_normals, texCoord).rgb;
 	} else {
 		normalMap = vec3(0.5, 0.5, 1.0);
 	}
