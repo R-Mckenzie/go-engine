@@ -9,19 +9,20 @@ type box struct {
 }
 
 type TextField struct {
-	x, y float32
-	font *Font
-	Text string
+	x, y     float32
+	font     *Font
+	Text     string
+	renderer Renderer
 }
 
-func newTextField(fontFile, text string, fontSize int, x, y float32) *TextField {
+func newTextField(fontFile, text string, fontSize int, x, y float32, r Renderer) *TextField {
 	font, err := LoadFont(fontFile, fontSize)
 	if err != nil {
 		panic(err)
 	}
-	return &TextField{font: font, Text: text, x: x, y: y}
+	return &TextField{font: font, Text: text, x: x, y: y, renderer: r}
 }
 
 func (t *TextField) draw() {
-	t.font.Print(t.x, t.y, t.Text)
+	t.font.Print(t.x, t.y, t.Text, t.renderer)
 }

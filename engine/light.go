@@ -10,15 +10,14 @@ type Light struct {
 	transform Transform
 }
 
-func NewLight(x, y, z, r, g, b float32, intensity float32) Light {
+func NewLight(x, y, z, r, g, b, f1, f2, f3, intensity float32) Light {
 	transform := NewTransform(x, y, z)
 	colour := mgl32.Vec4{r, g, b, intensity}
 
 	return Light{
 		transform: transform,
 		Colour:    colour,
-		Falloffs:  mgl32.Vec3{0.3, 0.5, 1},
-		// Falloffs:  mgl32.Vec3{0.3, 4, 20},
+		Falloffs:  mgl32.Vec3{f1, f2, f3},
 	}
 }
 

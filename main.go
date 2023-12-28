@@ -30,9 +30,10 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
+	// ==================================
 	// Code for actually running the game
 	game := engine.CreateGame(width, height)
-	s := newScene()
+	s := newScene(*game)
 	game.SetScene(s)
 	game.Run()
 	// ==================================

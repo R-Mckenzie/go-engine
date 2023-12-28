@@ -35,7 +35,6 @@ func LoadShader(vertex, fragment, name string) {
 	if err != nil {
 		log.Println("error loading shader.")
 	}
-
 	shaderMap[name] = shader
 }
 

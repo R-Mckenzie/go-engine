@@ -59,9 +59,9 @@ func (w *window) getSize() (float32, float32) {
 	return float32(width), float32(height)
 }
 
-func (w *window) getFramebuffer() [2]float32 {
+func (w *window) getFramebuffer() (float32, float32) {
 	width, height := w.win.GetFramebufferSize()
-	return [2]float32{float32(width), float32(height)}
+	return float32(width), float32(height)
 }
 
 func (w *window) setTitle(title string) {

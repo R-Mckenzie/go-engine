@@ -93,9 +93,8 @@ func (renderer *imguiRenderer) createFontsTexture() {
 	gl.BindTexture(gl.TEXTURE_2D, uint32(lastTexture))
 }
 
-func (renderer *imguiRenderer) Render(displayWidth, displayHeight float32, framebufferSize [2]float32, drawData imgui.ImDrawData) {
+func (renderer *imguiRenderer) Render(displayWidth, displayHeight, fbWidth, fbHeight float32, drawData imgui.ImDrawData) {
 	// Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
-	fbWidth, fbHeight := framebufferSize[0], framebufferSize[1]
 	if (fbWidth <= 0) || (fbHeight <= 0) {
 		return
 	}

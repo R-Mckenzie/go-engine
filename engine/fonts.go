@@ -134,10 +134,10 @@ type Font struct {
 	renderItems map[string]renderItem
 }
 
-func (f *Font) Print(x, y float32, str string) {
+func (f *Font) Print(x, y float32, str string, r Renderer) {
 	ri, ok := f.renderItems[str]
 	if ok {
-		Renderer2D().PushUI(ri)
+		r.PushUI(ri)
 		return
 	}
 	// Create new renderItem
@@ -192,7 +192,7 @@ func (f *Font) Print(x, y float32, str string) {
 	}
 
 	f.renderItems[str] = renderItem
-	Renderer2D().PushUI(renderItem)
+	r.PushUI(renderItem)
 }
 
 type glyph struct {

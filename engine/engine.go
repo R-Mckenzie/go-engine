@@ -21,9 +21,10 @@ type Scene interface {
 }
 
 type Game struct {
-	window *window
-	imgui  *imguiRenderer
-	scene  Scene
+	Renderer Renderer
+	window   *window
+	imgui    *imguiRenderer
+	scene    Scene
 }
 
 var ScreenW, ScreenH float32
@@ -53,7 +54,7 @@ func CreateGame(width, height float32) *Game {
 	gl.ClearColor(0.5, 0.5, 1, 1)
 
 	// Init 2d renderer
-	Renderer2DInit(width, height)
+	renderer := Renderer2DInit(width, height)
 
 	// Init imgui renderer
 	imguiRenderer := NewImguiRenderer()
@@ -61,12 +62,11 @@ func CreateGame(width, height float32) *Game {
 	dispW, dispH = width, height
 	ScreenW, ScreenH = width, height
 
-	game := &Game{
-		window: win,
-		imgui:  imguiRenderer,
+	return &Game{
+		Renderer: renderer,
+		window:   win,
+		imgui:    imguiRenderer,
 	}
-
-	return game
 }
 
 func (g *Game) Run() {
@@ -108,13 +108,14 @@ func (g *Game) Run() {
 		}
 
 		// Rendering
-		Renderer2D().render()
+		g.Renderer.render()
 
 		// Imgui
 		displayDebug()
 		g.scene.DebugGUI()
 		imgui.Render()
-		g.imgui.Render(dispW, dispH, g.window.getFramebuffer(), imgui.GetDrawData())
+		fbW, fbH := g.window.getFramebuffer()
+		g.imgui.Render(dispW, dispH, fbW, fbH, imgui.GetDrawData())
 		g.window.redraw()
 
 		fps++

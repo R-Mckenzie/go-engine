@@ -1,8 +1,6 @@
 package engine
 
 import (
-	"sync"
-
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 )
@@ -10,17 +8,14 @@ import (
 const MAX_LIGHTS = 15
 
 type renderer struct {
-	renderBuffer map[Image][]renderItem
-	uiBuffer     map[Image][]renderItem
-	ambientLight mgl32.Vec3
-	activeCam    Camera
-	projection   mgl32.Mat4
-	postShader   Shader
-	lights       []Light
-	lightingFB   frameBuffer
-	postFB       frameBuffer
-	exposure     float32
-
+	renderBuffer    map[Image][]renderItem
+	uiBuffer        map[Image][]renderItem
+	ambientLight    mgl32.Vec3
+	activeCam       Camera
+	projection      mgl32.Mat4
+	postShader      Shader
+	lights          []Light
+	postFB          frameBuffer
 	screenTransform Transform
 }
 
@@ -35,20 +30,16 @@ type renderItem struct {
 }
 
 type Renderer interface {
-	BeginScene(Camera, mgl32.Vec3)
+	BeginScene(camera Camera, ambientLight mgl32.Vec3, exposure float32)
 	PushItem(renderItem)
 	PushLight(Light)
 	PushUI(renderItem)
 	SetPostShader(string)
-	SetExposure(float32)
 	render()
 }
 
 var screenVAO uint32
 var screenInd int32
-
-var rendererOnce sync.Once
-var rendererSingleton Renderer
 
 var objectShader defaultShader
 var postShader postprocessShader
@@ -67,52 +58,29 @@ type postprocessShader struct {
 	Shader
 }
 
-func (ps postprocessShader) loadUniforms() {
-
-}
-
 // Initialises a 2D renderer. Takes in the width and height of the window render target
-func Renderer2DInit(width, height float32) {
-	rendererOnce.Do(func() {
-		shaderMap = make(map[string]Shader)
-		objectShader = defaultShader{loadShader(vertexShaderSource, fragmentShaderSource)}
-		postShader = postprocessShader{loadShader("shaders/postprocessVertex.glsl", "shaders/postprocessFragment.glsl")}
+func Renderer2DInit(width, height float32) Renderer {
+	shaderMap = make(map[string]Shader)
+	objectShader = defaultShader{loadShader(vertexShaderSource, fragmentShaderSource)}
+	postShader = postprocessShader{loadShader("shaders/postprocessVertex.glsl", "shaders/postprocessFragment.glsl")}
 
-		screenVAO, _, screenInd = screenQuadVAO()
+	screenVAO, _, screenInd = screenQuadVAO()
 
-		fb := newFrameBuffer(int32(width), int32(height))
-		lb := newFrameBuffer(int32(width), int32(height))
+	fb := newFrameBuffer(int32(width), int32(height))
 
-		transform := NewTransform(0, 0, 0)
-		transform.Scale = mgl32.Vec3{width, -height, 1}
+	transform := NewTransform(0, 0, 0)
+	transform.Scale = mgl32.Vec3{width, -height, 1}
 
-		orthoProjection := mgl32.Ortho(0, width, height, 0, -0.1, 10.1)
-		r := renderer{
-			renderBuffer: make(map[Image][]renderItem),
-			uiBuffer:     make(map[Image][]renderItem),
-			projection:   orthoProjection,
-			activeCam:    Camera2D{},
-			postShader:   postShader.Shader,
-			postFB:       fb,
-
-			lightingFB:      lb,
-			ambientLight:    mgl32.Vec3{1, 1, 1},
-			screenTransform: transform,
-		}
-
-		rendererSingleton = &r
-	})
-}
-
-func (r *renderer) SetExposure(e float32) {
-	r.exposure = e
-
-	r.postShader.Use()
-	r.postShader.SetFloat("exposure", e)
-}
-
-func Renderer2D() Renderer {
-	return rendererSingleton
+	orthoProjection := mgl32.Ortho(0, width, height, 0, -0.1, 10.1)
+	return &renderer{
+		renderBuffer: make(map[Image][]renderItem),
+		uiBuffer:     make(map[Image][]renderItem),
+		projection:   orthoProjection,
+		activeCam:    Camera2D{},
+		postShader:   postShader.Shader,
+		postFB:       fb,
+		ambientLight: mgl32.Vec3{1, 1, 1},
+	}
 }
 
 func pushLightUniforms(lights []Light, view, projection mgl32.Mat4) {
@@ -140,7 +108,7 @@ func pushLightUniforms(lights []Light, view, projection mgl32.Mat4) {
 	objectShader.SetVec3Array("falloff", MAX_LIGHTS, falloffs)
 }
 
-func (r *renderer) BeginScene(c Camera, ambientLight mgl32.Vec3) {
+func (r *renderer) BeginScene(c Camera, ambientLight mgl32.Vec3, exposure float32) {
 	r.renderBuffer = make(map[Image][]renderItem)
 	r.lights = []Light{}
 	r.uiBuffer = make(map[Image][]renderItem)
@@ -151,6 +119,9 @@ func (r *renderer) BeginScene(c Camera, ambientLight mgl32.Vec3) {
 	objectShader.SetInt("u_texture", 0) //GL_TEXTURE0
 	objectShader.SetInt("u_normals", 1) //GL_TEXTURE1
 	objectShader.SetVec4("ambientLight", r.ambientLight.Vec4(1))
+
+	r.postShader.Use()
+	r.postShader.SetFloat("exposure", exposure)
 }
 
 func (r *renderer) PushItem(ri renderItem) {
@@ -158,6 +129,7 @@ func (r *renderer) PushItem(ri renderItem) {
 }
 
 func (r *renderer) PushLight(light Light) {
+	// TODO: Filter out lights we can't see
 	r.lights = append(r.lights, light)
 }
 
@@ -173,8 +145,6 @@ func (r *renderer) SetPostShader(name string) {
 	}
 	r.postShader = shader
 }
-
-func (r *renderer) PushBatch() {}
 
 // TODO (Ross): Filter by shaders, types etc
 func (r *renderer) render() {

@@ -59,6 +59,7 @@ func (p *Player) Update(t engine.Tilemap) {
 
 // =====
 type testScene struct {
+	game    engine.Game
 	p       Player
 	camera  engine.Camera2D
 	tileMap engine.Tilemap
@@ -67,7 +68,7 @@ type testScene struct {
 
 var animator engine.Animator
 
-func newScene() *testScene {
+func newScene(game engine.Game) *testScene {
 	p := NewPlayer()
 	tilemap := engine.LoadTilemap("res/test.tmx", "res/atlas.png", "res/atlas_n.png", 2)
 	font, _ := engine.LoadFont("res/ProggyClean.ttf", 64)
@@ -97,6 +98,7 @@ func newScene() *testScene {
 	engine.LoadShader("shaders/postprocessVertex.glsl", "shaders/funkyEdgesFragment.glsl", "funky lines")
 
 	return &testScene{
+		game:    game,
 		p:       p,
 		tileMap: tilemap,
 		camera:  engine.NewCamera2D(0, 0),
@@ -108,7 +110,8 @@ var invOpen bool = false
 var isfunky = false
 
 var r, g, b float32 = 0.3, 0.3, 0.3
-var intensity int32 = 30
+var f1, f2, f3 float32 = 0.3, 0.3, 0.3
+var intensity float32 = 2
 var exposure float32 = 1
 
 func (s *testScene) Update() {
@@ -146,10 +149,10 @@ func (s *testScene) Update() {
 
 	if engine.Input().KeyOnce(engine.KeyC) {
 		if isfunky {
-			engine.Renderer2D().SetPostShader("null")
+			s.game.Renderer.SetPostShader("null")
 			isfunky = !isfunky
 		} else {
-			engine.Renderer2D().SetPostShader("funky lines")
+			s.game.Renderer.SetPostShader("funky lines")
 			isfunky = !isfunky
 		}
 	}
@@ -167,14 +170,13 @@ func (s *testScene) Update() {
 	}
 
 	s.camera.SetPos(camX, camY)
-	engine.Renderer2D().SetExposure(exposure)
-	engine.Renderer2D().BeginScene(s.camera, mgl32.Vec3{r, g, b})
-	engine.Renderer2D().PushItem(s.tileMap.StaticRenderItem())
-	engine.Renderer2D().PushItem(s.tileMap.AnimatedRenderItem())
-	engine.Renderer2D().PushItem(s.p.RenderItem())
-	engine.Renderer2D().PushLight(engine.NewLight(s.p.Pos[0], s.p.Pos[1], 50, 1, 1, 1, 1))
-	engine.Renderer2D().PushLight(engine.NewLight(600, 400, 50, 1, 0, 0, 1))
-	engine.Renderer2D().PushLight(engine.NewLight(600, 600, 50, 0, 0, 1, 1))
+	s.game.Renderer.BeginScene(s.camera, mgl32.Vec3{r, g, b}, exposure)
+	s.game.Renderer.PushItem(s.tileMap.StaticRenderItem())
+	s.game.Renderer.PushItem(s.tileMap.AnimatedRenderItem())
+	s.game.Renderer.PushItem(s.p.RenderItem())
+	s.game.Renderer.PushLight(engine.NewLight(s.p.Pos[0], s.p.Pos[1], 50, 1, 1, 1, f1, f2, f3, intensity))
+	s.game.Renderer.PushLight(engine.NewLight(600, 400, 50, 1, 0, 0, f1, f2, f3, 1))
+	s.game.Renderer.PushLight(engine.NewLight(600, 600, 50, 0, 0, 1, f1, f2, f3, 1))
 }
 
 func (s *testScene) DebugGUI() {
@@ -184,8 +186,9 @@ func (s *testScene) DebugGUI() {
 		engine.PlaySound("shot", 1)
 	}
 	imgui.ColorEdit3("lighting", [3]*float32{&r, &g, &b}, 0)
+	imgui.SliderFloat3("falloffs", [3]*float32{&f1, &f2, &f3}, 0, 20, "%.5f", 0)
 	imgui.SliderFloat("speed", &s.p.speed, 1, 10, "%.3f", 0)
 	imgui.SliderFloat("exposure", &exposure, 0, 10, "%.3f", 0)
-	imgui.SliderInt("intensity", &intensity, 1, 200, "%d", 0)
+	imgui.SliderFloat("intensity", &intensity, 0, 100, "%.3f", 0)
 	imgui.End()
 }
