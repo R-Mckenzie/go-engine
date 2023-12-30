@@ -9,7 +9,7 @@ const MAX_LIGHTS = 15
 
 type renderer struct {
 	renderBuffer    map[Image][]renderItem
-	uiBuffer        map[Image][]renderItem
+	uiBuffer        []renderItem
 	ambientLight    mgl32.Vec3
 	activeCam       Camera
 	projection      mgl32.Mat4
@@ -27,21 +27,27 @@ type renderItem struct {
 	useNormals bool
 	normals    Image
 	transform  Transform
+	colour     mgl32.Vec4
 }
 
 type Renderer interface {
 	BeginScene(camera Camera, ambientLight mgl32.Vec3, exposure float32)
-	PushItem(renderItem)
+	PushItem(renderable)
 	PushLight(Light)
-	PushUI(renderItem)
+	PushUI(renderable)
 	SetPostShader(string)
 	render()
+}
+
+type renderable interface {
+	renderItem() []renderItem
 }
 
 var screenVAO uint32
 var screenInd int32
 
 var objectShader defaultShader
+var uiShader defaultShader
 var postShader postprocessShader
 
 type defaultShader struct {
@@ -62,19 +68,18 @@ type postprocessShader struct {
 func Renderer2DInit(width, height float32) Renderer {
 	shaderMap = make(map[string]Shader)
 	objectShader = defaultShader{loadShader(vertexShaderSource, fragmentShaderSource)}
+	uiShader = defaultShader{loadShader(vertexShaderSource, "shaders/uiFragment.glsl")}
 	postShader = postprocessShader{loadShader("shaders/postprocessVertex.glsl", "shaders/postprocessFragment.glsl")}
 
 	screenVAO, _, screenInd = screenQuadVAO()
 
 	fb := newFrameBuffer(int32(width), int32(height))
 
-	transform := NewTransform(0, 0, 0)
-	transform.Scale = mgl32.Vec3{width, -height, 1}
-
 	orthoProjection := mgl32.Ortho(0, width, height, 0, -0.1, 10.1)
 	return &renderer{
 		renderBuffer: make(map[Image][]renderItem),
-		uiBuffer:     make(map[Image][]renderItem),
+		uiBuffer:     []renderItem{},
+		lights:       []Light{},
 		projection:   orthoProjection,
 		activeCam:    Camera2D{},
 		postShader:   postShader.Shader,
@@ -84,9 +89,9 @@ func Renderer2DInit(width, height float32) Renderer {
 }
 
 func pushLightUniforms(lights []Light, view, projection mgl32.Mat4) {
-	var positions []float32 // vec3
-	var falloffs []float32  // vec3
-	var colours []float32   // vec4
+	positions := make([]float32, 0, MAX_LIGHTS*3) // vec3
+	falloffs := make([]float32, 0, MAX_LIGHTS*3)  // vec3
+	colours := make([]float32, 0, MAX_LIGHTS*4)   // vec4
 
 	for i := 0; i < MAX_LIGHTS; i++ {
 		if i < len(lights) {
@@ -111,7 +116,7 @@ func pushLightUniforms(lights []Light, view, projection mgl32.Mat4) {
 func (r *renderer) BeginScene(c Camera, ambientLight mgl32.Vec3, exposure float32) {
 	r.renderBuffer = make(map[Image][]renderItem)
 	r.lights = []Light{}
-	r.uiBuffer = make(map[Image][]renderItem)
+	r.uiBuffer = []renderItem{}
 	r.activeCam = c
 	r.ambientLight = ambientLight
 
@@ -124,8 +129,10 @@ func (r *renderer) BeginScene(c Camera, ambientLight mgl32.Vec3, exposure float3
 	r.postShader.SetFloat("exposure", exposure)
 }
 
-func (r *renderer) PushItem(ri renderItem) {
-	r.renderBuffer[ri.image] = append(r.renderBuffer[ri.image], ri)
+func (r *renderer) PushItem(renderable renderable) {
+	for _, ri := range renderable.renderItem() {
+		r.renderBuffer[ri.image] = append(r.renderBuffer[ri.image], ri)
+	}
 }
 
 func (r *renderer) PushLight(light Light) {
@@ -133,8 +140,8 @@ func (r *renderer) PushLight(light Light) {
 	r.lights = append(r.lights, light)
 }
 
-func (r *renderer) PushUI(ri renderItem) {
-	r.uiBuffer[ri.image] = append(r.uiBuffer[ri.image], ri)
+func (r *renderer) PushUI(renderable renderable) {
+	r.uiBuffer = append(r.uiBuffer, renderable.renderItem()...)
 }
 
 func (r *renderer) SetPostShader(name string) {
@@ -151,12 +158,12 @@ func (r *renderer) render() {
 	// Bind scene framebuffer, render to texture
 	r.postFB.use()
 	gl.Enable(gl.DEPTH_TEST)
-	gl.Disable(gl.BLEND)
-	gl.ClearColor(0, 0, 0, 1)
+	gl.Enable(gl.BLEND)
+	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+	gl.ClearColor(0, 0, 0, 0)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 	objectShader.Use()
-
 	pushLightUniforms(r.lights, r.activeCam.ViewMatrix(), r.projection)
 
 	for _, v := range r.renderBuffer {
@@ -179,21 +186,10 @@ func (r *renderer) render() {
 		}
 	}
 
-	//Render UI on top
-	objectShader.Use()
-	for _, v := range r.uiBuffer {
-		gl.ActiveTexture(gl.TEXTURE0)
-		v[0].image.Use()
-		for _, ri := range v {
-			objectShader.loadUniforms(mgl32.Ident4(), mgl32.Ident4(), r.projection)
-			gl.BindVertexArray(ri.vao)
-			gl.DrawElements(gl.TRIANGLES, ri.indices, gl.UNSIGNED_INT, nil)
-		}
-	}
-
 	// now bind back to default framebuffer and draw a quad plane with the attached framebuffer color texture
 	gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
 	gl.Disable(gl.DEPTH_TEST) // disable depth test so screen-space quad isn't discarded due to depth test.
+	gl.Disable(gl.BLEND)
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 	gl.Viewport(0, 0, int32(dispW*2), int32(dispH*2))
 
@@ -203,6 +199,19 @@ func (r *renderer) render() {
 	gl.BindVertexArray(screenVAO)
 	gl.BindTexture(gl.TEXTURE_2D, r.postFB.tex.image.id)
 	gl.DrawElements(gl.TRIANGLES, screenInd, gl.UNSIGNED_INT, nil)
+
+	//Render UI on top
+	gl.Clear(gl.DEPTH_BUFFER_BIT)
+	gl.Enable(gl.BLEND)
+	uiShader.Use()
+	gl.ActiveTexture(gl.TEXTURE0)
+	for _, v := range r.uiBuffer {
+		v.image.Use()
+		uiShader.loadUniforms(GetMatrix(v.transform), mgl32.Translate3D(0, 0, -10), r.projection)
+		uiShader.SetVec4("u_colour", v.colour)
+		gl.BindVertexArray(v.vao)
+		gl.DrawElements(gl.TRIANGLES, v.indices, gl.UNSIGNED_INT, nil)
+	}
 }
 
 type frameBuffer struct {
@@ -273,11 +282,13 @@ func quad(width, height float32, uv mgl32.Vec4) ([]float32, []uint32) {
 		}
 }
 
+// returns vao, vbo, indices
 func newQuadVAO(width, height float32, uv mgl32.Vec4) (uint32, uint32, int32) {
 	p, i := quad(width, height, uv)
 	return genVAO(p, i)
 }
 
+// returns vao, vbo, indices
 func genVAO(p []float32, i []uint32) (uint32, uint32, int32) {
 	var vbo, vao, ebo uint32
 

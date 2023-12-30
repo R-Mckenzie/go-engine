@@ -134,14 +134,15 @@ type Font struct {
 	renderItems map[string]renderItem
 }
 
-func (f *Font) Print(x, y float32, str string, r Renderer) {
+func (f *Font) renderItem(x, y float32, str string) renderItem {
+	// x, y = 0, 0
+	// Use existing renderItem
 	ri, ok := f.renderItems[str]
 	if ok {
-		r.PushUI(ri)
-		return
+		return ri
 	}
-	// Create new renderItem
 
+	// Create new renderItem
 	vertices := make([]float32, 0, 5*4*len(str))
 	indices := make([]uint32, 0, 6*len(str))
 	offset := uint32(0)
@@ -192,7 +193,7 @@ func (f *Font) Print(x, y float32, str string, r Renderer) {
 	}
 
 	f.renderItems[str] = renderItem
-	r.PushUI(renderItem)
+	return renderItem
 }
 
 type glyph struct {

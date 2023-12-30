@@ -142,29 +142,32 @@ func atlasToTextures(filepath string, tileSize, atlasWidth, atlasHeight, tileCou
 	return textures
 }
 
-func (t *Tilemap) renderItem(vaoID uint32) renderItem {
-	return renderItem{
-		vao:        vaoID,
+func (t *Tilemap) renderItem() []renderItem {
+	staticRI := renderItem{
+		vao:        t.staticVAO,
 		indices:    int32(t.width) * int32(t.height) * 6 * int32(len(t.staticLayers)),
 		image:      t.textures[0].image,
 		normals:    t.normals[0].image,
 		useNormals: t.normals != nil,
 		transform:  NewTransform(0, 0, 0),
 	}
-}
 
-func (t *Tilemap) AnimatedRenderItem() renderItem {
 	if *t.changed {
 		v, _ := t.vertices(*t.animIndex, true)
 		gl.BindBuffer(gl.ARRAY_BUFFER, t.animatedVBO)
 		gl.BufferData(gl.ARRAY_BUFFER, len(t.staticLayers)*t.width*t.height*5*4*4, gl.Ptr(v), gl.STATIC_DRAW)
 		*t.changed = false
 	}
-	return t.renderItem(t.animatedVAO)
-}
+	animRI := renderItem{
+		vao:        t.animatedVAO,
+		indices:    int32(t.width) * int32(t.height) * 6 * int32(len(t.staticLayers)),
+		image:      t.textures[0].image,
+		normals:    t.normals[0].image,
+		useNormals: t.normals != nil,
+		transform:  NewTransform(0, 0, 0),
+	}
 
-func (t *Tilemap) StaticRenderItem() renderItem {
-	return t.renderItem(t.staticVAO)
+	return []renderItem{staticRI, animRI}
 }
 
 func (t *Tilemap) vertices(tick int, animated bool) ([]float32, []uint32) {

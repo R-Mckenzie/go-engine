@@ -52,24 +52,28 @@ func (s *Sprite) SetNormal(texture *Texture) {
 	}
 }
 
-func (s Sprite) RenderItem() renderItem {
+func (s Sprite) renderItem() []renderItem {
+	var normals Image
+	var useNormals bool
+
 	if s.normal != nil {
-		return renderItem{
-			vao:       s.vao,
-			indices:   6,
-			transform: s.Transform,
-			image:     s.texture.image,
-			normals:   s.normal.image,
-		}
+		normals = s.normal.image
+		useNormals = true
 	} else {
-		return renderItem{
-			vao:        s.vao,
-			indices:    6,
-			transform:  s.Transform,
-			image:      s.texture.image,
-			useNormals: false,
-		}
+		useNormals = false
+		normals = Image{} // does not get used if useNormals = false
 	}
+
+	ri := renderItem{
+		vao:        s.vao,
+		indices:    6,
+		transform:  s.Transform,
+		image:      s.texture.image,
+		normals:    normals,
+		useNormals: useNormals,
+	}
+
+	return []renderItem{ri}
 }
 
 type Animator struct {

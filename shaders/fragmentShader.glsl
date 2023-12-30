@@ -20,8 +20,9 @@ uniform vec3 falloff[MAX_LIGHTS];         //attenuation coefficients
 
 void main() {
 	vec4 diffuseColour = texture(u_texture, texCoord);
-	if (diffuseColour.a < 0.1)
+	if (diffuseColour.a < 0.1){
 		discard;
+	}
 
 	vec3 normalMap;
 	if (useNormals) {

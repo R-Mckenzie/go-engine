@@ -16,7 +16,7 @@ type Player struct {
 func NewPlayer() Player {
 	texture := engine.NewTexture("res/man.png")
 	return Player{
-		Sprite: engine.NewSprite(64, 64, 500, 200, 5, texture, nil),
+		Sprite: engine.NewSprite(64, 64, 500, 200, 10, texture, nil),
 		c:      engine.NewCollider(64, 64, 500, 200),
 		speed:  5,
 	}
@@ -64,6 +64,7 @@ type testScene struct {
 	camera  engine.Camera2D
 	tileMap engine.Tilemap
 	font    *engine.Font
+	sprite  engine.Sprite
 }
 
 var animator engine.Animator
@@ -71,7 +72,7 @@ var animator engine.Animator
 func newScene(game engine.Game) *testScene {
 	p := NewPlayer()
 	tilemap := engine.LoadTilemap("res/test.tmx", "res/atlas.png", "res/atlas_n.png", 2)
-	font, _ := engine.LoadFont("res/ProggyClean.ttf", 64)
+	font, _ := engine.LoadFont("res/ProggyClean.ttf", 32)
 
 	engine.LoadSound("res/music.mp3", "bg")
 	engine.LoadSound("res/shot.mp3", "shot")
@@ -96,12 +97,14 @@ func newScene(game engine.Game) *testScene {
 	animator.Add(idleAnim, "idle")
 
 	engine.LoadShader("shaders/postprocessVertex.glsl", "shaders/funkyEdgesFragment.glsl", "funky lines")
+	norm := engine.NewTexture("res/atlascobble_n.png")
 
 	return &testScene{
 		game:    game,
 		p:       p,
 		tileMap: tilemap,
 		camera:  engine.NewCamera2D(0, 0),
+		sprite:  engine.NewSprite(64, 64, 800, 300, 10, engine.NewTexture("res/man.png"), &norm),
 		font:    font,
 	}
 }
@@ -171,9 +174,11 @@ func (s *testScene) Update() {
 
 	s.camera.SetPos(camX, camY)
 	s.game.Renderer.BeginScene(s.camera, mgl32.Vec3{r, g, b}, exposure)
-	s.game.Renderer.PushItem(s.tileMap.StaticRenderItem())
-	s.game.Renderer.PushItem(s.tileMap.AnimatedRenderItem())
-	s.game.Renderer.PushItem(s.p.RenderItem())
+	s.game.Renderer.PushItem(&s.tileMap)
+	s.game.Renderer.PushItem(s.p)
+	s.game.Renderer.PushItem(s.sprite)
+	s.game.Renderer.PushUI(engine.NewGUIBox(400, 200, 0, 0, mgl32.Vec4{1, 1, 1, 1}))
+	s.game.Renderer.PushUI(engine.NewTextField("Health: 10", 32, 10, 10, s.font, mgl32.Vec4{0, 0, 0, 1}))
 	s.game.Renderer.PushLight(engine.NewLight(s.p.Pos[0], s.p.Pos[1], 50, 1, 1, 1, f1, f2, f3, intensity))
 	s.game.Renderer.PushLight(engine.NewLight(600, 400, 50, 1, 0, 0, f1, f2, f3, 1))
 	s.game.Renderer.PushLight(engine.NewLight(600, 600, 50, 0, 0, 1, f1, f2, f3, 1))
