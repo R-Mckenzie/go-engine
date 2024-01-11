@@ -135,7 +135,6 @@ type Font struct {
 }
 
 func (f *Font) renderItem(x, y float32, str string) renderItem {
-	// x, y = 0, 0
 	// Use existing renderItem
 	ri, ok := f.renderItems[str]
 	if ok {

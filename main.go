@@ -36,6 +36,8 @@ func main() {
 	s := newScene(*game)
 	game.SetScene(s)
 	game.Run()
+
+	defer game.Quit()
 	// ==================================
 
 	// profiling

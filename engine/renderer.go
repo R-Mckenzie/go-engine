@@ -30,11 +30,11 @@ type renderItem struct {
 	colour     mgl32.Vec4
 }
 
-type Renderer interface {
+type Renderer2D interface {
 	BeginScene(camera Camera, ambientLight mgl32.Vec3, exposure float32)
 	PushItem(renderable)
 	PushLight(Light)
-	PushUI(renderable)
+	PushUI(renderItem)
 	SetPostShader(string)
 	render()
 }
@@ -65,7 +65,7 @@ type postprocessShader struct {
 }
 
 // Initialises a 2D renderer. Takes in the width and height of the window render target
-func Renderer2DInit(width, height float32) Renderer {
+func Renderer2DInit(width, height float32) Renderer2D {
 	shaderMap = make(map[string]Shader)
 	objectShader = defaultShader{loadShader(vertexShaderSource, fragmentShaderSource)}
 	uiShader = defaultShader{loadShader(vertexShaderSource, "shaders/uiFragment.glsl")}
@@ -140,8 +140,8 @@ func (r *renderer) PushLight(light Light) {
 	r.lights = append(r.lights, light)
 }
 
-func (r *renderer) PushUI(renderable renderable) {
-	r.uiBuffer = append(r.uiBuffer, renderable.renderItem()...)
+func (r *renderer) PushUI(ri renderItem) {
+	r.uiBuffer = append(r.uiBuffer, ri)
 }
 
 func (r *renderer) SetPostShader(name string) {
@@ -165,7 +165,6 @@ func (r *renderer) render() {
 
 	objectShader.Use()
 	pushLightUniforms(r.lights, r.activeCam.ViewMatrix(), r.projection)
-
 	for _, v := range r.renderBuffer {
 		gl.ActiveTexture(gl.TEXTURE0)
 		v[0].image.Use()
@@ -200,7 +199,9 @@ func (r *renderer) render() {
 	gl.BindTexture(gl.TEXTURE_2D, r.postFB.tex.image.id)
 	gl.DrawElements(gl.TRIANGLES, screenInd, gl.UNSIGNED_INT, nil)
 
-	//Render UI on top
+	// Render UI on top
+	// Create UI batch
+
 	gl.Clear(gl.DEPTH_BUFFER_BIT)
 	gl.Enable(gl.BLEND)
 	uiShader.Use()

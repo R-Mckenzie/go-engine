@@ -1,11 +1,11 @@
 package engine
 
 import (
+	"fmt"
 	"log"
 	"runtime"
 	"time"
 
-	imgui "github.com/AllenDang/cimgui-go"
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
 )
@@ -17,29 +17,29 @@ const (
 
 type Scene interface {
 	Update()
-	DebugGUI()
 }
 
 type Game struct {
-	Renderer Renderer
-	window   *window
-	imgui    *imguiRenderer
-	scene    Scene
+	window *window
+	scene  Scene
 }
+
+// Engine Systems
+var Renderer Renderer2D
+var Input *input
+var UI *ui
 
 var ScreenW, ScreenH float32
 var dispW, dispH float32
 
-var ctx imgui.ImGuiContext
-
 // setup the game
 func CreateGame(width, height float32) *Game {
-	ctx = imgui.CreateContext(0)
 	runtime.LockOSThread()
 
 	// Create GLFW window and input
 	win := createWindow(int(width), int(height))
-	Input().setWindow(win)
+	Input = initInput()
+	Input.setWindow(win)
 
 	// Init OpenGL
 	if err := gl.Init(); err != nil {
@@ -53,19 +53,20 @@ func CreateGame(width, height float32) *Game {
 	gl.DepthFunc(gl.LESS)
 	gl.ClearColor(0.5, 0.5, 1, 1)
 
-	// Init 2d renderer
-	renderer := Renderer2DInit(width, height)
+	Renderer = Renderer2DInit(width, height)
 
-	// Init imgui renderer
-	imguiRenderer := NewImguiRenderer()
+	uiElementIDs := 0
+	UI = &ui{
+		input:        Input,
+		skin:         NewTexture("res/ui9slice.png"),
+		currentGenID: &uiElementIDs,
+	}
 
 	dispW, dispH = width, height
 	ScreenW, ScreenH = width, height
 
 	return &Game{
-		Renderer: renderer,
-		window:   win,
-		imgui:    imguiRenderer,
+		window: win,
 	}
 }
 
@@ -78,8 +79,7 @@ func (g *Game) Run() {
 	// sTicker pings every second, when it does print current fps and reset
 	go func() {
 		for range tick.C {
-			AddDebugInfo("FPS", fps)
-			AddDebugInfo("UPS", ups)
+			fmt.Printf("FPS: %d, UPS: %d\n", fps, ups)
 			fps = 0
 			ups = 0
 			tick.Reset(time.Second * 1)
@@ -95,34 +95,23 @@ func (g *Game) Run() {
 		prev = time.Now()
 		acc += delta
 
-		// Imgui prep
-		Input().imguiPrepFrame(float32(delta))
-		imgui.NewFrame()
-
 		for acc >= idealDelta.Seconds() {
 			g.window.processInput()
 			g.update()
-			Input().update()
+			Input.update()
 			ups++
 			acc -= idealDelta.Seconds()
 		}
 
 		// Rendering
-		g.Renderer.render()
-
-		// Imgui
-		displayDebug()
-		g.scene.DebugGUI()
-		imgui.Render()
-		fbW, fbH := g.window.getFramebuffer()
-		g.imgui.Render(dispW, dispH, fbW, fbH, imgui.GetDrawData())
+		Renderer.render()
 		g.window.redraw()
 
 		fps++
 
 		// Slow down if running too fast
 		if fps > 120 {
-			time.Sleep(time.Millisecond * 5)
+			time.Sleep(time.Millisecond * 20)
 		}
 
 		if g.window.closed() {
@@ -137,15 +126,13 @@ func (g *Game) SetScene(s Scene) {
 }
 
 func (g *Game) update() {
-	if Input().KeyDown(KeyEscape) {
+	if Input.KeyDown(KeyEscape) {
 		g.window.win.SetShouldClose(true)
 	}
 	g.scene.Update()
 }
 
 func (g *Game) Quit() {
-	g.imgui.dispose()
 	glfw.Terminate()
-	ctx.Destroy()
 	runtime.UnlockOSThread()
 }

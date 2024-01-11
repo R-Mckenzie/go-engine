@@ -1,10 +1,10 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/R-Mckenzie/game-engine/engine"
 	"github.com/go-gl/mathgl/mgl32"
-
-	imgui "github.com/AllenDang/cimgui-go"
 )
 
 type Player struct {
@@ -24,16 +24,16 @@ func NewPlayer() Player {
 
 func (p *Player) Update(t engine.Tilemap) {
 	move := mgl32.Vec3{0, 0, 0}
-	if engine.Input().KeyDown(engine.KeyW) {
+	if engine.Input.KeyDown(engine.KeyW) {
 		move[1] -= 1
 	}
-	if engine.Input().KeyDown(engine.KeyA) {
+	if engine.Input.KeyDown(engine.KeyA) {
 		move[0] -= 1
 	}
-	if engine.Input().KeyDown(engine.KeyS) {
+	if engine.Input.KeyDown(engine.KeyS) {
 		move[1] += 1
 	}
-	if engine.Input().KeyDown(engine.KeyD) {
+	if engine.Input.KeyDown(engine.KeyD) {
 		move[0] += 1
 	}
 	if move.Len() > 0 {
@@ -136,33 +136,37 @@ func (s *testScene) Update() {
 		camY = mh - int(engine.ScreenH)
 	}
 
-	if engine.Input().KeyOnce(engine.KeyP) {
+	if engine.Input.KeyOnce(engine.KeyP) {
 		engine.LoopSound("bg", -1)
 	}
-	if engine.Input().KeyOnce(engine.KeyO) {
+	if engine.Input.KeyOnce(engine.KeyO) {
 		engine.PauseLoop("bg")
 	}
-	if engine.Input().KeyOnce(engine.KeyV) {
+	if engine.Input.KeyOnce(engine.KeyV) {
 		engine.PlaySound("shot", 1)
 	}
 
-	if engine.Input().KeyOnce(engine.KeyI) {
+	if engine.Input.KeyOnce(engine.KeyI) {
 		invOpen = !invOpen
 	}
 
-	if engine.Input().KeyOnce(engine.KeyC) {
+	if engine.Input.KeyOnce(engine.KeyC) {
 		if isfunky {
-			s.game.Renderer.SetPostShader("null")
+			engine.Renderer.SetPostShader("null")
 			isfunky = !isfunky
 		} else {
-			s.game.Renderer.SetPostShader("funky lines")
+			engine.Renderer.SetPostShader("funky lines")
 			isfunky = !isfunky
 		}
 	}
 
-	if engine.Input().KeyDown(engine.KeyA) {
+	if engine.Input.KeyUp(engine.MouseLeft) {
+		fmt.Printf("mouse: %v\n", engine.Input.MousePosition())
+	}
+
+	if engine.Input.KeyDown(engine.KeyA) {
 		animator.Trigger("run_left")
-	} else if engine.Input().KeyDown(engine.KeyD) {
+	} else if engine.Input.KeyDown(engine.KeyD) {
 		animator.Trigger("run_right")
 	} else {
 		animator.Trigger("idle")
@@ -173,27 +177,13 @@ func (s *testScene) Update() {
 	}
 
 	s.camera.SetPos(camX, camY)
-	s.game.Renderer.BeginScene(s.camera, mgl32.Vec3{r, g, b}, exposure)
-	s.game.Renderer.PushItem(&s.tileMap)
-	s.game.Renderer.PushItem(s.p)
-	s.game.Renderer.PushItem(s.sprite)
-	s.game.Renderer.PushUI(engine.NewGUIBox(400, 200, 0, 0, mgl32.Vec4{1, 1, 1, 1}))
-	s.game.Renderer.PushUI(engine.NewTextField("Health: 10", 32, 10, 10, s.font, mgl32.Vec4{0, 0, 0, 1}))
-	s.game.Renderer.PushLight(engine.NewLight(s.p.Pos[0], s.p.Pos[1], 50, 1, 1, 1, f1, f2, f3, intensity))
-	s.game.Renderer.PushLight(engine.NewLight(600, 400, 50, 1, 0, 0, f1, f2, f3, 1))
-	s.game.Renderer.PushLight(engine.NewLight(600, 600, 50, 0, 0, 1, f1, f2, f3, 1))
-}
+	engine.Renderer.BeginScene(s.camera, mgl32.Vec3{r, g, b}, exposure)
+	engine.Renderer.PushItem(&s.tileMap)
+	engine.Renderer.PushItem(s.p)
+	engine.Renderer.PushItem(s.sprite)
+	engine.Renderer.PushLight(engine.NewLight(s.p.Pos[0], s.p.Pos[1], 50, 1, 1, 1, f1, f2, f3, intensity))
+	engine.Renderer.PushLight(engine.NewLight(600, 400, 50, 1, 0, 0, f1, f2, f3, 1))
+	engine.Renderer.PushLight(engine.NewLight(600, 600, 50, 0, 0, 1, f1, f2, f3, 1))
 
-func (s *testScene) DebugGUI() {
-	imgui.SetNextWindowSize(imgui.ImVec2{X: 400, Y: 200}, imgui.ImGuiCond(imgui.ImGuiCond_FirstUseEver))
-	imgui.Begin("SCENE DATA", nil, 0)
-	if imgui.Button("shoot", imgui.NewImVec2(0, 0)) {
-		engine.PlaySound("shot", 1)
-	}
-	imgui.ColorEdit3("lighting", [3]*float32{&r, &g, &b}, 0)
-	imgui.SliderFloat3("falloffs", [3]*float32{&f1, &f2, &f3}, 0, 20, "%.5f", 0)
-	imgui.SliderFloat("speed", &s.p.speed, 1, 10, "%.3f", 0)
-	imgui.SliderFloat("exposure", &exposure, 0, 10, "%.3f", 0)
-	imgui.SliderFloat("intensity", &intensity, 0, 100, "%.3f", 0)
-	imgui.End()
+	engine.UI.Button(100, 100, 300, 100, "Button", mgl32.Vec4{1, 1, 1, 1})
 }

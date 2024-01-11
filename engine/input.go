@@ -1,10 +1,8 @@
 package engine
 
 import (
-	"sync"
-
-	imgui "github.com/AllenDang/cimgui-go"
 	"github.com/go-gl/glfw/v3.2/glfw"
+	"github.com/go-gl/mathgl/mgl32"
 )
 
 type input struct {
@@ -15,31 +13,23 @@ type input struct {
 	keysUp      [KeyLast]bool
 	mouseDown   [3]bool
 
-	imguiIO imgui.ImGuiIO
-	time    float64
+	time float64
 }
 
-var inputOnce sync.Once
-var inputSingleton *input
+func initInput() *input {
+	keysDown := [KeyLast]bool{}
+	currentKeys := [KeyLast]bool{}
+	keysOnce := [KeyLast]bool{}
+	keysUp := [KeyLast]bool{}
+	mouseDown := [3]bool{}
 
-func Input() *input {
-	inputOnce.Do(func() {
-		keysDown := [KeyLast]bool{}
-		currentKeys := [KeyLast]bool{}
-		keysOnce := [KeyLast]bool{}
-		keysUp := [KeyLast]bool{}
-		mouseDown := [3]bool{}
-
-		inputSingleton = &input{
-			keysDown:    keysDown,
-			currentKeys: currentKeys,
-			keysOnce:    keysOnce,
-			keysUp:      keysUp,
-			mouseDown:   mouseDown,
-			imguiIO:     imgui.GetIO(),
-		}
-	})
-	return inputSingleton
+	return &input{
+		keysDown:    keysDown,
+		currentKeys: currentKeys,
+		keysOnce:    keysOnce,
+		keysUp:      keysUp,
+		mouseDown:   mouseDown,
+	}
 }
 
 func (i *input) setCallBacks(w *window) {
@@ -47,9 +37,12 @@ func (i *input) setCallBacks(w *window) {
 		if int(button) < len(i.mouseDown) {
 			switch action {
 			case glfw.Press:
-				i.mouseDown[button] = true
+				i.keysDown[button] = true
+				i.keysOnce[button] = true
 			case glfw.Release:
-				i.mouseDown[button] = false
+				i.keysDown[button] = false
+				i.keysOnce[button] = false
+				i.keysUp[button] = true
 			}
 		}
 	})
@@ -62,19 +55,10 @@ func (i *input) setCallBacks(w *window) {
 			i.keysDown[key] = false
 			i.keysUp[key] = true
 		}
-
-		// IMGUI
-		i.imguiIO.AddKeyEvent(imgui.ImGuiKey(key), action == glfw.Press)
 	})
 
 	w.win.SetScrollCallback(func(window *glfw.Window, x, y float64) {
-		i.imguiIO.AddMouseWheelDelta(float32(x), float32(y))
 	})
-}
-
-func (i *input) setImguiIO(io imgui.ImGuiIO) {
-	i.imguiIO = io
-	io.AddFocusEvent(true)
 }
 
 func (i *input) setWindow(w *window) {
@@ -94,20 +78,11 @@ func (i *input) KeyUp(key int) bool {
 	return i.keysUp[key]
 }
 
-func (i *input) imguiPrepFrame(dt float32) {
-	i.imguiIO.SetDisplaySize(imgui.NewImVec2(float32(i.window.Width), float32(i.window.Height)))
-	i.imguiIO.SetDeltaTime(dt)
-
-	// pass inputs
+func (i *input) MousePosition() mgl32.Vec2 {
 	x, y := i.window.win.GetCursorPos()
-	i.imguiIO.SetMousePos(imgui.ImVec2{X: float32(x), Y: float32(y)})
-
-	//consume mouse clicks
-	for x := 0; x < len(i.mouseDown); x++ {
-		down := i.mouseDown[x] || i.window.win.GetMouseButton(glfw.MouseButton(x)) == glfw.Press
-		i.imguiIO.SetMouseButtonDown(x, down)
-		i.mouseDown[x] = false
-	}
+	xRatio := ScreenW / dispW
+	yRatio := ScreenH / dispH
+	return mgl32.Vec2{float32(x) * xRatio, float32(y) * yRatio}
 }
 
 func (i *input) update() {
