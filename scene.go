@@ -160,10 +160,6 @@ func (s *testScene) Update() {
 		}
 	}
 
-	if engine.Input.KeyUp(engine.MouseLeft) {
-		fmt.Printf("mouse: %v\n", engine.Input.MousePosition())
-	}
-
 	if engine.Input.KeyDown(engine.KeyA) {
 		animator.Trigger("run_left")
 	} else if engine.Input.KeyDown(engine.KeyD) {
@@ -185,5 +181,9 @@ func (s *testScene) Update() {
 	engine.Renderer.PushLight(engine.NewLight(600, 400, 50, 1, 0, 0, f1, f2, f3, 1))
 	engine.Renderer.PushLight(engine.NewLight(600, 600, 50, 0, 0, 1, f1, f2, f3, 1))
 
-	engine.UI.Button(100, 100, 300, 100, "Button", mgl32.Vec4{1, 1, 1, 1})
+	engine.UI.Begin()
+	if engine.UI.Button(100, 100, 300, 100, 1, "Button", mgl32.Vec4{1, 1, 1, 1}) {
+		fmt.Printf("clicked\n")
+	}
+	engine.UI.End()
 }

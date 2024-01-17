@@ -54,12 +54,12 @@ func CreateGame(width, height float32) *Game {
 	gl.ClearColor(0.5, 0.5, 1, 1)
 
 	Renderer = Renderer2DInit(width, height)
+	uifont, _ := LoadFont("res/ProggyClean.ttf", 64)
 
-	uiElementIDs := 0
 	UI = &ui{
-		input:        Input,
-		skin:         NewTexture("res/ui9slice.png"),
-		currentGenID: &uiElementIDs,
+		font:  uifont,
+		input: Input,
+		skin:  NewTexture("res/ui9slice.png"),
 	}
 
 	dispW, dispH = width, height

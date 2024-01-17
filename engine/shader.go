@@ -2,8 +2,8 @@ package engine
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -157,7 +157,7 @@ func loadShaderFile(filepath string, sType uint32) uint32 {
 }
 
 func readFile(filepath string) string {
-	text, err := ioutil.ReadFile(filepath)
+	text, err := os.ReadFile(filepath)
 	if err != nil {
 		panic(err)
 	}

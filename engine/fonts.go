@@ -5,18 +5,18 @@ import (
 	"fmt"
 	"image"
 	"image/png"
-	"io/ioutil"
 	"log"
 	"os"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/gltext"
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/golang/freetype"
 	"golang.org/x/image/math/fixed"
 )
 
 func LoadFont(path string, scale int) (*Font, error) {
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		log.Println("Error loading font: ", err)
 		return nil, err
@@ -102,6 +102,7 @@ func LoadFont(path string, scale int) (*Font, error) {
 	fmt.Println(len(glyphs))
 	return &Font{
 			glyphs:      glyphs,
+			scale:       scale,
 			atlas:       atlas,
 			renderItems: make(map[string]renderItem)},
 		nil
@@ -130,14 +131,21 @@ func toPNG(img image.Image) {
 
 type Font struct {
 	glyphs      []glyph
+	scale       int
 	atlas       Image
 	renderItems map[string]renderItem
 }
 
-func (f *Font) renderItem(x, y float32, str string) renderItem {
+func (f *Font) scalingFactor(newSize float32) float32 {
+	return newSize / float32(f.scale)
+}
+
+func (f *Font) renderItem(x, y float32, size int, str string) renderItem {
+	scale := f.scalingFactor(float32(size))
 	// Use existing renderItem
 	ri, ok := f.renderItems[str]
 	if ok {
+		ri.transform.Scale = mgl32.Vec3{scale, scale, 1}
 		return ri
 	}
 
@@ -192,6 +200,7 @@ func (f *Font) renderItem(x, y float32, str string) renderItem {
 	}
 
 	f.renderItems[str] = renderItem
+	ri.transform.Scale = mgl32.Vec3{scale, scale, 1}
 	return renderItem
 }
 
