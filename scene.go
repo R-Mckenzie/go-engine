@@ -185,6 +185,6 @@ func (s *testScene) Update() {
 	if engine.UI.Button(100, 100, 300, 100, 1, "Button", mgl32.Vec4{0.2, 0.3, 1, 1}) {
 		fmt.Printf("clicked\n")
 	}
-	engine.UI.Label("Test Label xya 1 2 3 4 5", 400, 500, 64, mgl32.Vec4{0, 0, 0, 1})
+	engine.UI.Label("Test Label xya 1 2 3 4 5", 100, 100, 32, mgl32.Vec4{0, 0, 0, 1})
 	engine.UI.End()
 }

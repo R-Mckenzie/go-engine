@@ -1,6 +1,8 @@
 package engine
 
 import (
+	"fmt"
+
 	"github.com/go-gl/mathgl/mgl32"
 )
 
@@ -26,9 +28,6 @@ func (ui *ui) End() {
 }
 
 func (ui *ui) Button(x, y, w, h float32, id int, label string, colour mgl32.Vec4) bool {
-	x = ScreenW / x
-	y = ScreenH / y
-
 	printData := ui.font.renderItem(x, y, 64, label)
 	printData.ri.transform.Pos = printData.ri.transform.Pos.Add(mgl32.Vec3{(w / 2) - (printData.size[0] / 2), (h / 2) - (printData.size[1] / 2)})
 	printData.ri.colour = mgl32.Vec4{0, 0, 0, 1}
@@ -71,6 +70,8 @@ func (ui *ui) Button(x, y, w, h float32, id int, label string, colour mgl32.Vec4
 
 func (ui *ui) regionhit(x, y, w, h float32) bool {
 	mouse := ui.input.MousePosition()
+	fmt.Println(x, y)
+	fmt.Println(mouse)
 	if mouse.X() < x || mouse.Y() < y || mouse.X() >= x+w || mouse.Y() >= y+h {
 		return false
 	}
@@ -78,10 +79,7 @@ func (ui *ui) regionhit(x, y, w, h float32) bool {
 }
 
 func (ui *ui) Label(label string, x, y float32, size int, colour mgl32.Vec4) {
-	x = ScreenW / x
-	y = ScreenH / y
 	printData := ui.font.renderItem(x, y, size, label)
-	printData.ri.transform.Pos = printData.ri.transform.Pos.Add(mgl32.Vec3{printData.size[0] / 2, printData.size[1] / 2})
 	printData.ri.colour = colour
 	Renderer.PushUI(printData.ri)
 }

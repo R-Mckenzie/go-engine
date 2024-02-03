@@ -20,7 +20,7 @@ type Font struct {
 	ttf         truetype.Font
 	glyphs      map[int][]glyph
 	atlas       map[int]Image
-	renderItems map[int]map[string]renderedFontData
+	renderDatas map[int]map[string]renderedFontData
 }
 
 func LoadFont(path string) (*Font, error) {
@@ -40,7 +40,7 @@ func LoadFont(path string) (*Font, error) {
 		ttf:         *ttf,
 		glyphs:      make(map[int][]glyph),
 		atlas:       make(map[int]Image),
-		renderItems: make(map[int]map[string]renderedFontData),
+		renderDatas: make(map[int]map[string]renderedFontData),
 	}, nil
 }
 
@@ -118,7 +118,7 @@ func (f *Font) genNewFontSize(size int) {
 
 	f.glyphs[size] = glyphs
 	f.atlas[size] = atlas
-	f.renderItems[size] = make(map[string]renderedFontData)
+	f.renderDatas[size] = make(map[string]renderedFontData)
 }
 
 func toPNG(img image.Image) {
@@ -149,17 +149,18 @@ type renderedFontData struct {
 
 // Returns the renderItem to be drawn, and the width in pixels from left edge to right edge
 func (f *Font) renderItem(x, y float32, size int, str string) renderedFontData {
-	// Check if we have alreadt rendered font atlas for the desired size
+	// Check if we have already rendered font atlas for the desired size
 	_, ok := f.atlas[size]
 	if !ok {
 		f.genNewFontSize(size)
+		println("Gen size: ", size)
 	}
 
 	// Use existing renderItem
-	ri, ok := f.renderItems[size][str]
+	rd, ok := f.renderDatas[size][str]
 	if ok {
-		ri.ri.transform = NewTransform(x, y, 9)
-		return ri
+		rd.ri.transform = NewTransform(x, y, 9)
+		return rd
 	}
 
 	// Create new renderItem
@@ -216,7 +217,7 @@ func (f *Font) renderItem(x, y float32, size int, str string) renderedFontData {
 	}
 
 	stringPrintData := renderedFontData{ri: renderItem, size: mgl32.Vec2{currentX, float32(maxHeight)}}
-	f.renderItems[size][str] = stringPrintData
+	f.renderDatas[size][str] = stringPrintData
 	return stringPrintData
 }
 
