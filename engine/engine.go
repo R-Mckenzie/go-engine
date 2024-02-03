@@ -54,7 +54,7 @@ func CreateGame(width, height float32) *Game {
 	gl.ClearColor(0.5, 0.5, 1, 1)
 
 	Renderer = Renderer2DInit(width, height)
-	uifont, _ := LoadFont("res/ProggyClean.ttf", 64)
+	uifont, _ := LoadFont("res/ProggyClean.ttf")
 
 	UI = &ui{
 		font:  uifont,

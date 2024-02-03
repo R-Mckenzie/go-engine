@@ -72,7 +72,7 @@ var animator engine.Animator
 func newScene(game engine.Game) *testScene {
 	p := NewPlayer()
 	tilemap := engine.LoadTilemap("res/test.tmx", "res/atlas.png", "res/atlas_n.png", 2)
-	font, _ := engine.LoadFont("res/ProggyClean.ttf", 32)
+	font, _ := engine.LoadFont("res/ProggyClean.ttf")
 
 	engine.LoadSound("res/music.mp3", "bg")
 	engine.LoadSound("res/shot.mp3", "shot")
@@ -182,8 +182,9 @@ func (s *testScene) Update() {
 	engine.Renderer.PushLight(engine.NewLight(600, 600, 50, 0, 0, 1, f1, f2, f3, 1))
 
 	engine.UI.Begin()
-	if engine.UI.Button(100, 100, 300, 100, 1, "Button", mgl32.Vec4{1, 1, 1, 1}) {
+	if engine.UI.Button(100, 100, 300, 100, 1, "Button", mgl32.Vec4{0.2, 0.3, 1, 1}) {
 		fmt.Printf("clicked\n")
 	}
+	engine.UI.Label("Test Label xya 1 2 3 4 5", 400, 500, 64, mgl32.Vec4{0, 0, 0, 1})
 	engine.UI.End()
 }

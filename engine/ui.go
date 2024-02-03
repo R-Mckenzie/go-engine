@@ -29,18 +29,19 @@ func (ui *ui) Button(x, y, w, h float32, id int, label string, colour mgl32.Vec4
 	x = ScreenW / x
 	y = ScreenH / y
 
-	text := ui.font.renderItem(x, y, 64, label)
-	text.colour = mgl32.Vec4{0, 0, 0, 1}
+	printData := ui.font.renderItem(x, y, 64, label)
+	printData.ri.transform.Pos = printData.ri.transform.Pos.Add(mgl32.Vec3{(w / 2) - (printData.size[0] / 2), (h / 2) - (printData.size[1] / 2)})
+	printData.ri.colour = mgl32.Vec4{0, 0, 0, 1}
 
 	if ui.regionhit(x, y, w, h) {
 		if (colour[0]+colour[1]+colour[2])/3 < 0.5 {
 			colour = colour.Add(mgl32.Vec4{0.3, 0.3, 0.3, 0})
 			y -= 2
-			text.transform.Pos[1] -= 2
+			printData.ri.transform.Pos[1] -= 2
 		} else {
 			colour = colour.Sub(mgl32.Vec4{0.3, 0.3, 0.3, 0})
 			y -= 2
-			text.transform.Pos[1] -= 2
+			printData.ri.transform.Pos[1] -= 2
 		}
 
 		ui.hotItem = id
@@ -60,8 +61,7 @@ func (ui *ui) Button(x, y, w, h float32, id int, label string, colour mgl32.Vec4
 		colour:     colour,
 	}
 	Renderer.PushUI(ri)
-
-	Renderer.PushUI(text)
+	Renderer.PushUI(printData.ri)
 
 	if !ui.input.KeyDown(MouseLeft) && ui.hotItem == id && ui.activeItem == id {
 		return true
@@ -71,15 +71,19 @@ func (ui *ui) Button(x, y, w, h float32, id int, label string, colour mgl32.Vec4
 
 func (ui *ui) regionhit(x, y, w, h float32) bool {
 	mouse := ui.input.MousePosition()
-
 	if mouse.X() < x || mouse.Y() < y || mouse.X() >= x+w || mouse.Y() >= y+h {
 		return false
 	}
 	return true
 }
 
-func (ui *ui) Label(text string) {
-
+func (ui *ui) Label(label string, x, y float32, size int, colour mgl32.Vec4) {
+	x = ScreenW / x
+	y = ScreenH / y
+	printData := ui.font.renderItem(x, y, size, label)
+	printData.ri.transform.Pos = printData.ri.transform.Pos.Add(mgl32.Vec3{printData.size[0] / 2, printData.size[1] / 2})
+	printData.ri.colour = colour
+	Renderer.PushUI(printData.ri)
 }
 
 func (ui *ui) TextInput(label, hint string, buf *string) {
@@ -88,23 +92,4 @@ func (ui *ui) TextInput(label, hint string, buf *string) {
 
 func (ui *ui) Checkbox(label string, val *bool) {
 
-}
-
-func (b uiBox) renderItem() []renderItem {
-	ri := b.sprite.renderItem()
-	ri[0].shader = uiShader.Shader
-	ri[0].colour = b.colour
-	return ri
-}
-
-type uiBox struct {
-	colour mgl32.Vec4
-	sprite Sprite
-}
-
-type TextField struct {
-	x, y   float32
-	font   *Font
-	Text   string
-	Colour mgl32.Vec4
 }

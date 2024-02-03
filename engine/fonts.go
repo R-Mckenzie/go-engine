@@ -2,20 +2,28 @@ package engine
 
 import (
 	"bufio"
-	"fmt"
 	"image"
 	"image/png"
 	"log"
+	"math"
 	"os"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/gltext"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/golang/freetype"
+	"github.com/golang/freetype/truetype"
 	"golang.org/x/image/math/fixed"
 )
 
-func LoadFont(path string, scale int) (*Font, error) {
+type Font struct {
+	ttf         truetype.Font
+	glyphs      map[int][]glyph
+	atlas       map[int]Image
+	renderItems map[int]map[string]renderedFontData
+}
+
+func LoadFont(path string) (*Font, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		log.Println("Error loading font: ", err)
@@ -28,6 +36,15 @@ func LoadFont(path string, scale int) (*Font, error) {
 		return nil, err
 	}
 
+	return &Font{
+		ttf:         *ttf,
+		glyphs:      make(map[int][]glyph),
+		atlas:       make(map[int]Image),
+		renderItems: make(map[int]map[string]renderedFontData),
+	}, nil
+}
+
+func (f *Font) genNewFontSize(size int) {
 	low, high := rune(32), rune(127)
 	glyphs := make([]glyph, high-low+1)
 
@@ -35,7 +52,7 @@ func LoadFont(path string, scale int) (*Font, error) {
 	glyphsPerRow := int32(16)
 	glyphsPerCol := (gc / glyphsPerRow) + 1
 
-	gb := ttf.Bounds(fixed.Int26_6(scale))
+	gb := f.ttf.Bounds(fixed.Int26_6(size))
 	gw := int32(gb.Max.X - gb.Min.X)
 	gh := int32((gb.Max.Y - gb.Min.Y) + 5)
 	iw := gltext.Pow2(uint32(gw * glyphsPerRow))
@@ -46,8 +63,8 @@ func LoadFont(path string, scale int) (*Font, error) {
 
 	c := freetype.NewContext()
 	c.SetDPI(72)
-	c.SetFont(ttf)
-	c.SetFontSize(float64(scale))
+	c.SetFont(&f.ttf)
+	c.SetFontSize(float64(size))
 	c.SetClip(img.Bounds())
 	c.SetDst(img)
 	c.SetSrc(image.White)
@@ -56,8 +73,8 @@ func LoadFont(path string, scale int) (*Font, error) {
 	var gx, gy int32
 
 	for ch := low; ch <= high; ch++ {
-		index := ttf.Index(ch)
-		metric := ttf.HMetric(fixed.Int26_6(scale), index)
+		index := f.ttf.Index(ch)
+		metric := f.ttf.HMetric(fixed.Int26_6(size), index)
 
 		glyphs[gi].advance = int(metric.AdvanceWidth)
 		glyphs[gi].x = int(gx)
@@ -65,7 +82,7 @@ func LoadFont(path string, scale int) (*Font, error) {
 		glyphs[gi].width = int(gw)
 		glyphs[gi].height = int(gh)
 
-		pt := freetype.Pt(int(gx), int(gy)+int(c.PointToFixed(float64(scale))>>8))
+		pt := freetype.Pt(int(gx), int(gy)+int(c.PointToFixed(float64(size))>>8))
 		c.DrawString(string(ch), pt)
 
 		if gi%16 == 0 {
@@ -99,13 +116,9 @@ func LoadFont(path string, scale int) (*Font, error) {
 		glyphs[i].texture = NewTextureFromAtlas(atlas, float32(glyph.x), float32(glyph.y), float32(glyph.width), float32(glyph.height), false)
 	}
 
-	fmt.Println(len(glyphs))
-	return &Font{
-			glyphs:      glyphs,
-			scale:       scale,
-			atlas:       atlas,
-			renderItems: make(map[string]renderItem)},
-		nil
+	f.glyphs[size] = glyphs
+	f.atlas[size] = atlas
+	f.renderItems[size] = make(map[string]renderedFontData)
 }
 
 func toPNG(img image.Image) {
@@ -129,23 +142,23 @@ func toPNG(img image.Image) {
 	}
 }
 
-type Font struct {
-	glyphs      []glyph
-	scale       int
-	atlas       Image
-	renderItems map[string]renderItem
+type renderedFontData struct {
+	ri   renderItem
+	size mgl32.Vec2
 }
 
-func (f *Font) scalingFactor(newSize float32) float32 {
-	return newSize / float32(f.scale)
-}
+// Returns the renderItem to be drawn, and the width in pixels from left edge to right edge
+func (f *Font) renderItem(x, y float32, size int, str string) renderedFontData {
+	// Check if we have alreadt rendered font atlas for the desired size
+	_, ok := f.atlas[size]
+	if !ok {
+		f.genNewFontSize(size)
+	}
 
-func (f *Font) renderItem(x, y float32, size int, str string) renderItem {
-	scale := f.scalingFactor(float32(size))
 	// Use existing renderItem
-	ri, ok := f.renderItems[str]
+	ri, ok := f.renderItems[size][str]
 	if ok {
-		ri.transform.Scale = mgl32.Vec3{scale, scale, 1}
+		ri.ri.transform = NewTransform(x, y, 9)
 		return ri
 	}
 
@@ -153,15 +166,18 @@ func (f *Font) renderItem(x, y float32, size int, str string) renderItem {
 	vertices := make([]float32, 0, 5*4*len(str))
 	indices := make([]uint32, 0, 6*len(str))
 	offset := uint32(0)
-	currentX := float32(x)
+	// currentX := float32(x)
+	currentX := float32(0)
+	currentY := float32(0)
+	maxHeight := 0.0
 	for _, v := range str {
-		g := f.glyphs[v-32]
-
+		g := f.glyphs[size][v-32]
+		maxHeight = math.Max(maxHeight, float64(g.height))
 		vertices = append(vertices,
-			currentX, y, 0, g.texture.texCoords[0], g.texture.texCoords[2],
-			currentX+float32(g.width-1), y, 0, g.texture.texCoords[1], g.texture.texCoords[2],
-			currentX+float32(g.width-1), y+float32(g.height-1), 0, g.texture.texCoords[1], g.texture.texCoords[3],
-			currentX, y+float32(g.height-1), 0, g.texture.texCoords[0], g.texture.texCoords[3],
+			currentX, currentY, 0, g.texture.texCoords[0], g.texture.texCoords[2],
+			currentX+float32(g.width-1), currentY, 0, g.texture.texCoords[1], g.texture.texCoords[2],
+			currentX+float32(g.width-1), currentY+float32(g.height-1), 0, g.texture.texCoords[1], g.texture.texCoords[3],
+			currentX, currentY+float32(g.height-1), 0, g.texture.texCoords[0], g.texture.texCoords[3],
 		)
 		currentX += float32(g.advance)
 
@@ -195,13 +211,13 @@ func (f *Font) renderItem(x, y float32, size int, str string) renderItem {
 	renderItem := renderItem{
 		vao:       vao,
 		indices:   int32(len(indices)),
-		image:     f.atlas,
+		image:     f.atlas[size],
 		transform: NewTransform(x, y, 9),
 	}
 
-	f.renderItems[str] = renderItem
-	ri.transform.Scale = mgl32.Vec3{scale, scale, 1}
-	return renderItem
+	stringPrintData := renderedFontData{ri: renderItem, size: mgl32.Vec2{currentX, float32(maxHeight)}}
+	f.renderItems[size][str] = stringPrintData
+	return stringPrintData
 }
 
 type glyph struct {
