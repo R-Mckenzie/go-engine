@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	updatesPS  = 60
-	idealDelta = time.Second / updatesPS
+	updatesPS   = 60
+	targetDelta = time.Second / updatesPS
 )
 
 type Scene interface {
@@ -95,12 +95,12 @@ func (g *Game) Run() {
 		prev = time.Now()
 		acc += delta
 
-		for acc >= idealDelta.Seconds() {
+		for acc >= targetDelta.Seconds() {
 			g.window.processInput()
 			g.update()
 			Input.update()
 			ups++
-			acc -= idealDelta.Seconds()
+			acc -= targetDelta.Seconds()
 		}
 
 		// Rendering

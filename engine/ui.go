@@ -1,8 +1,6 @@
 package engine
 
 import (
-	"fmt"
-
 	"github.com/go-gl/mathgl/mgl32"
 )
 
@@ -70,8 +68,6 @@ func (ui *ui) Button(x, y, w, h float32, id int, label string, colour mgl32.Vec4
 
 func (ui *ui) regionhit(x, y, w, h float32) bool {
 	mouse := ui.input.MousePosition()
-	fmt.Println(x, y)
-	fmt.Println(mouse)
 	if mouse.X() < x || mouse.Y() < y || mouse.X() >= x+w || mouse.Y() >= y+h {
 		return false
 	}
