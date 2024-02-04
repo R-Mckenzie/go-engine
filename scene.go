@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/R-Mckenzie/game-engine/engine"
+	"github.com/R-Mckenzie/go-engine/engine"
 	"github.com/go-gl/mathgl/mgl32"
 )
 
