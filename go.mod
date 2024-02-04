@@ -1,4 +1,4 @@
-module github.com/R-Mckenzie/game-engine
+module github.com/R-Mckenzie/go-engine
 
 go 1.21
 
