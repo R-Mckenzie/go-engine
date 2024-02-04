@@ -1,8 +1,8 @@
 package engine
 
 import (
+	_ "embed"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
@@ -10,10 +10,20 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-const (
-	vertexShaderSource   = "shaders/vertexShader.glsl"
-	fragmentShaderSource = "shaders/fragmentShader.glsl"
-)
+//go:embed shaders/vertexShader.glsl
+var vertexShaderSource string
+
+//go:embed shaders/fragmentShader.glsl
+var fragmentShaderSource string
+
+//go:embed shaders/postprocessFragment.glsl
+var ppFragmentShaderSource string
+
+//go:embed shaders/postprocessVertex.glsl
+var ppVertexShaderSource string
+
+//go:embed shaders/uiFragment.glsl
+var uiFragmentSource string
 
 type Shader struct {
 	id       uint32
@@ -23,26 +33,16 @@ type Shader struct {
 var shaderMap map[string]Shader
 
 func loadShader(vertex, fragment string) Shader {
-	shader, err := NewShader(vertex, fragment)
-	if err != nil {
-		log.Println("error loading shader. Default shader will be used instead")
-	}
+	shader := NewShaderFromFile(vertex, fragment)
 	return shader
 }
 
 func LoadShader(vertex, fragment, name string) {
-	shader, err := NewShader(vertex, fragment)
-	if err != nil {
-		log.Println("error loading shader.")
-	}
+	shader := NewShaderFromFile(vertex, fragment)
 	shaderMap[name] = shader
 }
 
-func NewShader(vertexPath, fragmentPath string) (Shader, error) {
-	// Compile shader src
-	vShader := loadShaderFile(vertexPath, gl.VERTEX_SHADER)
-	fShader := loadShaderFile(fragmentPath, gl.FRAGMENT_SHADER)
-
+func createGLShader(vShader, fShader uint32) (Shader, error) {
 	// Create program and bind shaders
 	id := gl.CreateProgram()
 	gl.AttachShader(id, vShader)
@@ -63,6 +63,33 @@ func NewShader(vertexPath, fragmentPath string) (Shader, error) {
 	gl.DeleteShader(vShader)
 	gl.DeleteShader(fShader)
 	return Shader{id, make(map[string]int32)}, nil
+}
+
+func NewShaderFromString(vertexSrc, fragmentSrc string) Shader {
+	vShader, err := compileShader(vertexSrc, gl.VERTEX_SHADER)
+	if err != nil {
+		panic(err)
+	}
+	fShader, err := compileShader(fragmentSrc, gl.FRAGMENT_SHADER)
+	if err != nil {
+		panic(err)
+	}
+	shader, err := createGLShader(vShader, fShader)
+	if err != nil {
+		panic(err)
+	}
+	return shader
+}
+
+func NewShaderFromFile(vertexPath, fragmentPath string) Shader {
+	// Compile shader src
+	vShader := loadShaderFile(vertexPath, gl.VERTEX_SHADER)
+	fShader := loadShaderFile(fragmentPath, gl.FRAGMENT_SHADER)
+	shader, err := createGLShader(vShader, fShader)
+	if err != nil {
+		panic(err)
+	}
+	return shader
 }
 
 func (s Shader) Use() {
@@ -129,6 +156,9 @@ func (s *Shader) UniformLoc(name string) int32 {
 }
 
 func compileShader(src string, shaderType uint32) (uint32, error) {
+	if src[len(src)-1] != '\x00' {
+		src += string('\x00')
+	}
 	shader := gl.CreateShader(shaderType)
 	csources, free := gl.Strs(src)
 	gl.ShaderSource(shader, 1, csources, nil)
@@ -148,19 +178,18 @@ func compileShader(src string, shaderType uint32) (uint32, error) {
 }
 
 func loadShaderFile(filepath string, sType uint32) uint32 {
-	src := readFile(filepath)
-	shader, err := compileShader(src, sType)
-	if err != nil {
-		panic(err)
-	}
-	return shader
-}
-
-func readFile(filepath string) string {
+	// Read source file
 	text, err := os.ReadFile(filepath)
 	if err != nil {
 		panic(err)
 	}
 	text = append(text, '\x00')
-	return string(text)
+	src := string(text)
+
+	// Compile shader
+	shader, err := compileShader(src, sType)
+	if err != nil {
+		panic(err)
+	}
+	return shader
 }

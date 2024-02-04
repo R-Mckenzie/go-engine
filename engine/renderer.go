@@ -67,9 +67,9 @@ type postprocessShader struct {
 // Initialises a 2D renderer. Takes in the width and height of the window render target
 func Renderer2DInit(width, height float32) Renderer2D {
 	shaderMap = make(map[string]Shader)
-	objectShader = defaultShader{loadShader(vertexShaderSource, fragmentShaderSource)}
-	uiShader = defaultShader{loadShader(vertexShaderSource, "shaders/uiFragment.glsl")}
-	postShader = postprocessShader{loadShader("shaders/postprocessVertex.glsl", "shaders/postprocessFragment.glsl")}
+	objectShader = defaultShader{NewShaderFromString(vertexShaderSource, fragmentShaderSource)}
+	uiShader = defaultShader{NewShaderFromString(vertexShaderSource, uiFragmentSource)}
+	postShader = postprocessShader{NewShaderFromString(ppVertexShaderSource, ppFragmentShaderSource)}
 
 	screenVAO, _, screenInd = screenQuadVAO()
 

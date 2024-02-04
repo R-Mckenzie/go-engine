@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"runtime/pprof"
 
-	"github.com/R-Mckenzie/game-engine/engine"
+	"github.com/R-Mckenzie/go-engine/engine"
 )
 
 const width, height = 32.0 * 30, 32.0 * 20
