@@ -12,8 +12,6 @@ type input struct {
 	keysOnce    [KeyLast]bool
 	keysUp      [KeyLast]bool
 	mouseDown   [3]bool
-
-	time float64
 }
 
 func initInput() *input {

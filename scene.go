@@ -59,17 +59,18 @@ func (p *Player) Update(t engine.Tilemap) {
 
 // =====
 type testScene struct {
-	game    engine.Game
+	game    *engine.Game
 	p       Player
 	camera  engine.Camera2D
 	tileMap engine.Tilemap
 	font    *engine.Font
 	sprite  engine.Sprite
+	s2      *scene2
 }
 
 var animator engine.Animator
 
-func newScene(game engine.Game) *testScene {
+func newScene(game *engine.Game, s2 *scene2) *testScene {
 	p := NewPlayer()
 	tilemap := engine.LoadTilemap("res/test.tmx", "res/atlas.png", "res/atlas_n.png", 2)
 	font, _ := engine.LoadFont("res/ProggyClean.ttf")
@@ -106,6 +107,7 @@ func newScene(game engine.Game) *testScene {
 		camera:  engine.NewCamera2D(0, 0),
 		sprite:  engine.NewSprite(64, 64, 800, 300, 10, engine.NewTexture("res/man.png"), &norm),
 		font:    font,
+		s2:      s2,
 	}
 }
 
@@ -182,9 +184,10 @@ func (s *testScene) Update() {
 	engine.Renderer.PushLight(engine.NewLight(600, 600, 50, 0, 0, 1, f1, f2, f3, 1))
 
 	engine.UI.Begin()
-	if engine.UI.Button(100, 100, 300, 100, 1, "Button", mgl32.Vec4{0.2, 0.3, 1, 1}) {
+	if engine.UI.Button(100, 100, 300, 100, 1, "Button", mgl32.Vec4{1, 0.3, 0.2, 1}) {
 		fmt.Printf("clicked\n")
+		s.game.SetScene(s.s2)
 	}
-	engine.UI.Label("Test Label xya 1 2 3 4 5", 100, 100, 32, mgl32.Vec4{0, 0, 0, 1})
+
 	engine.UI.End()
 }

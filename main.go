@@ -33,7 +33,8 @@ func main() {
 	// ==================================
 	// Code for actually running the game
 	game := engine.CreateGame(width, height)
-	s := newScene(*game)
+	s2 := newScene2(game)
+	s := newScene(game, s2)
 	game.SetScene(s)
 	game.Run()
 

@@ -4,11 +4,13 @@ import (
 	"log"
 	"math"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/faiface/beep"
 	"github.com/faiface/beep/mp3"
 	"github.com/faiface/beep/speaker"
+	"github.com/faiface/beep/wav"
 )
 
 type Voice struct {
@@ -55,7 +57,15 @@ func LoadSound(filepath, name string) {
 		log.Fatal(err)
 	}
 
-	streamer, format, err := mp3.Decode(f)
+	var streamer beep.StreamSeekCloser
+	var format beep.Format
+
+	filetype := strings.Split(filepath, ".")[1]
+	if filetype == "mp3" {
+		streamer, format, err = mp3.Decode(f)
+	} else if filetype == "wav" {
+		streamer, format, err = wav.Decode(f)
+	}
 	if err != nil {
 		log.Fatal(err)
 	}

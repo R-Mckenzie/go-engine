@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
-	"github.com/go-gl/glfw/v3.2/glfw"
 )
 
 const (
@@ -22,6 +21,8 @@ type Scene interface {
 type Game struct {
 	window *window
 	scene  Scene
+
+	quit bool
 }
 
 // Engine Systems
@@ -67,6 +68,7 @@ func CreateGame(width, height float32) *Game {
 
 	return &Game{
 		window: win,
+		quit:   false,
 	}
 }
 
@@ -95,8 +97,8 @@ func (g *Game) Run() {
 		prev = time.Now()
 		acc += delta
 
+		g.window.pollEvents()
 		for acc >= targetDelta.Seconds() {
-			g.window.processInput()
 			g.update()
 			Input.update()
 			ups++
@@ -114,25 +116,30 @@ func (g *Game) Run() {
 			time.Sleep(time.Millisecond * 20)
 		}
 
-		if g.window.closed() {
+		if g.quit {
+			g.window.close()
+			fmt.Println("break")
 			break
 		}
 	}
-	g.Quit()
+
+	g.window.Terminate()
+	runtime.UnlockOSThread()
 }
 
 func (g *Game) SetScene(s Scene) {
 	g.scene = s
+	fmt.Println("Changing Scene")
 }
 
 func (g *Game) update() {
 	if Input.KeyDown(KeyEscape) {
-		g.window.win.SetShouldClose(true)
+		g.Quit()
+		return
 	}
 	g.scene.Update()
 }
 
 func (g *Game) Quit() {
-	glfw.Terminate()
-	runtime.UnlockOSThread()
+	g.quit = true
 }

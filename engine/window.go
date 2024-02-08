@@ -79,12 +79,22 @@ func (w *window) redraw() {
 	w.win.SwapBuffers()
 }
 
-func (w *window) processInput() {
+func (w *window) pollEvents() {
 	glfw.PollEvents()
+}
+
+func (w *window) close() {
+	if !w.closed() {
+		w.win.SetShouldClose(true)
+	}
 }
 
 func (w *window) closed() bool {
 	return w.win.ShouldClose()
+}
+
+func (w *window) Terminate() {
+	glfw.Terminate()
 }
 
 func WindowSize() (int, int) {

@@ -36,6 +36,7 @@ type Renderer2D interface {
 	PushLight(Light)
 	PushUI(renderItem)
 	SetPostShader(string)
+	ClearBuffers()
 	render()
 }
 
@@ -111,6 +112,12 @@ func pushLightUniforms(lights []Light, view, projection mgl32.Mat4) {
 	objectShader.SetVec3Array("lightPos", MAX_LIGHTS, positions)
 	objectShader.SetVec4Array("lightColour", MAX_LIGHTS, colours)
 	objectShader.SetVec3Array("falloff", MAX_LIGHTS, falloffs)
+}
+
+func (r *renderer) ClearBuffers() {
+	r.renderBuffer = make(map[Image][]renderItem)
+	r.lights = []Light{}
+	r.uiBuffer = []renderItem{}
 }
 
 func (r *renderer) BeginScene(c Camera, ambientLight mgl32.Vec3, exposure float32) {
