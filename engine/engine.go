@@ -118,7 +118,6 @@ func (g *Game) Run() {
 
 		if g.quit {
 			g.window.close()
-			fmt.Println("break")
 			break
 		}
 	}
@@ -129,7 +128,6 @@ func (g *Game) Run() {
 
 func (g *Game) SetScene(s Scene) {
 	g.scene = s
-	fmt.Println("Changing Scene")
 }
 
 func (g *Game) update() {

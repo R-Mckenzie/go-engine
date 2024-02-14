@@ -1,8 +1,6 @@
 package engine
 
 import (
-	"fmt"
-
 	"github.com/go-gl/mathgl/mgl32"
 )
 
@@ -37,9 +35,7 @@ func (ui *ui) Button(x, y, w, h float32, label string, colour mgl32.Vec4) bool {
 	printData.ri.colour = mgl32.Vec4{0, 0, 0, 1}
 
 	id := ui.idCount
-	fmt.Println(id)
 	ui.idCount++
-	fmt.Println(ui.idCount)
 
 	if ui.regionhit(x, y, w, h) {
 		if (colour[0]+colour[1]+colour[2])/3 < 0.5 {
