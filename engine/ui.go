@@ -1,6 +1,8 @@
 package engine
 
 import (
+	"fmt"
+
 	"github.com/go-gl/mathgl/mgl32"
 )
 
@@ -11,10 +13,14 @@ type ui struct {
 
 	hotItem    int // item hovered over by mouse
 	activeItem int // the item currently selected by clicking mouse
+
+	idCount int
 }
 
 func (ui *ui) Begin() {
+	Renderer.beginUI()
 	ui.hotItem = 0
+	ui.idCount = 1
 }
 
 func (ui *ui) End() {
@@ -25,10 +31,15 @@ func (ui *ui) End() {
 	}
 }
 
-func (ui *ui) Button(x, y, w, h float32, id int, label string, colour mgl32.Vec4) bool {
+func (ui *ui) Button(x, y, w, h float32, label string, colour mgl32.Vec4) bool {
 	printData := ui.font.renderItem(x, y, 64, label)
 	printData.ri.transform.Pos = printData.ri.transform.Pos.Add(mgl32.Vec3{(w / 2) - (printData.size[0] / 2), (h / 2) - (printData.size[1] / 2)})
 	printData.ri.colour = mgl32.Vec4{0, 0, 0, 1}
+
+	id := ui.idCount
+	fmt.Println(id)
+	ui.idCount++
+	fmt.Println(ui.idCount)
 
 	if ui.regionhit(x, y, w, h) {
 		if (colour[0]+colour[1]+colour[2])/3 < 0.5 {

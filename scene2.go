@@ -18,9 +18,8 @@ func newScene2(game *engine.Game) *scene2 {
 }
 
 func (s *scene2) Update() {
-	engine.Renderer.ClearBuffers()
 	engine.UI.Begin()
-	if engine.UI.Button(400, 100, 300, 100, 1, "Button", mgl32.Vec4{1, 0.3, 0.2, 1}) {
+	if engine.UI.Button(400, 100, 300, 100, "Button", mgl32.Vec4{1, 0.3, 0.2, 1}) {
 		fmt.Printf("clicked scene 2\n")
 	}
 	engine.UI.End()
