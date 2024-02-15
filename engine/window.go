@@ -27,6 +27,7 @@ func createWindow(width, height int) *window {
 	glfw.WindowHint(glfw.ContextVersionMajor, 4)
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
+	glfw.WindowHint(glfw.ContextVersionMajor, 4)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 
 	win, err := glfw.CreateWindow(width, height, "Go Game Engine", nil, nil)
@@ -71,10 +72,10 @@ func (w *window) setTitle(title string) {
 func (w *window) redraw() {
 	// These are to fix incorrect rendering on macOS
 	if !w.windowMoved {
-		x, y := w.win.GetPos()
-		w.win.SetPos(x+w.moveDir, y)
-		w.moveDir *= -1
-		w.windowMoved = true
+		// x, y := w.win.GetPos()
+		// w.win.SetPos(x+w.moveDir, y)
+		// w.moveDir *= -1
+		// w.windowMoved = true
 	}
 	w.win.SwapBuffers()
 }

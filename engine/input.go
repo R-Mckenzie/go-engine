@@ -78,8 +78,9 @@ func (i *input) KeyUp(key int) bool {
 
 func (i *input) MousePosition() mgl32.Vec2 {
 	x, y := i.window.win.GetCursorPos()
-	xRatio := ScreenW / dispW
-	yRatio := ScreenH / dispH
+	// TODO: scaling input based on resolution
+	xRatio := ScreenW / (dispW / 2)
+	yRatio := ScreenH / (dispH / 2)
 	return mgl32.Vec2{float32(x) * xRatio, float32(y) * yRatio}
 }
 

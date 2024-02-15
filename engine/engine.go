@@ -63,7 +63,7 @@ func CreateGame(width, height float32) *Game {
 		skin:  NewTexture("res/ui9slice.png"),
 	}
 
-	dispW, dispH = width, height
+	dispW, dispH = win.getFramebuffer()
 	ScreenW, ScreenH = width, height
 
 	return &Game{
@@ -92,7 +92,7 @@ func (g *Game) Run() {
 	var acc float64 //LAG
 
 	for {
-		dispW, dispH = g.window.getSize()
+		dispW, dispH = g.window.getFramebuffer()
 		delta := time.Since(prev).Seconds()
 		prev = time.Now()
 		acc += delta

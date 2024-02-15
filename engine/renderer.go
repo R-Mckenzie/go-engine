@@ -195,7 +195,7 @@ func (r *renderer) render() {
 	gl.Disable(gl.DEPTH_TEST) // disable depth test so screen-space quad isn't discarded due to depth test.
 	gl.Disable(gl.BLEND)
 	gl.Clear(gl.COLOR_BUFFER_BIT)
-	gl.Viewport(0, 0, int32(dispW*2), int32(dispH*2))
+	gl.Viewport(0, 0, int32(dispW), int32(dispH))
 
 	r.postShader.Use()
 	r.postShader.SetInt("u_texture", 0) //GL_TEXTURE0
