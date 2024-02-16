@@ -1,6 +1,8 @@
 package engine
 
 import (
+	"runtime"
+
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 )
@@ -12,6 +14,8 @@ type input struct {
 	keysOnce    [KeyLast]bool
 	keysUp      [KeyLast]bool
 	mouseDown   [3]bool
+
+	screenScale float32 // On mac, we need to divide the framebuffer size by 2 to get the accurate screen position for the mouse input
 }
 
 func initInput() *input {
@@ -21,12 +25,20 @@ func initInput() *input {
 	keysUp := [KeyLast]bool{}
 	mouseDown := [3]bool{}
 
+	var screenScale float32
+	if runtime.GOOS == "darwin" {
+		screenScale = 2
+	} else {
+		screenScale = 1
+	}
+
 	return &input{
 		keysDown:    keysDown,
 		currentKeys: currentKeys,
 		keysOnce:    keysOnce,
 		keysUp:      keysUp,
 		mouseDown:   mouseDown,
+		screenScale: screenScale,
 	}
 }
 
@@ -78,9 +90,10 @@ func (i *input) KeyUp(key int) bool {
 
 func (i *input) MousePosition() mgl32.Vec2 {
 	x, y := i.window.win.GetCursorPos()
+
 	// TODO: scaling input based on resolution
-	xRatio := ScreenW / (dispW / 2)
-	yRatio := ScreenH / (dispH / 2)
+	xRatio := ScreenW / (dispW / i.screenScale)
+	yRatio := ScreenH / (dispH / i.screenScale)
 	return mgl32.Vec2{float32(x) * xRatio, float32(y) * yRatio}
 }
 
