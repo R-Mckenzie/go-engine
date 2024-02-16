@@ -9,6 +9,7 @@ import (
 
 type input struct {
 	window      *window
+	textInput   []rune
 	keysDown    [KeyLast]bool
 	currentKeys [KeyLast]bool
 	keysOnce    [KeyLast]bool
@@ -69,6 +70,10 @@ func (i *input) setCallBacks(w *window) {
 
 	w.win.SetScrollCallback(func(window *glfw.Window, x, y float64) {
 	})
+
+	w.win.SetCharCallback(func(w *glfw.Window, char rune) {
+		i.textInput = append(i.textInput, char)
+	})
 }
 
 func (i *input) setWindow(w *window) {
@@ -106,6 +111,7 @@ func (i *input) update() {
 		}
 		i.currentKeys[x] = i.keysDown[x]
 	}
+	i.textInput = []rune{}
 }
 
 // List of all keyboard buttons.

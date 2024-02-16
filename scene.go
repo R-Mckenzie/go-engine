@@ -119,6 +119,8 @@ var f1, f2, f3 float32 = 0.3, 0.3, 0.3
 var intensity float32 = 2
 var exposure float32 = 1
 
+var buf string
+
 func (s *testScene) Update() {
 	s.p.Update(s.tileMap)
 	camX, camY := int(s.p.Pos[0]-400), int(s.p.Pos[1]-300)
@@ -188,6 +190,8 @@ func (s *testScene) Update() {
 		fmt.Printf("clicked\n")
 		s.game.SetScene(s.s2)
 	}
+
+	engine.UI.TextInput("username", 300, 50, 30, 16, &buf)
 
 	engine.UI.End()
 }

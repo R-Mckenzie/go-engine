@@ -1,8 +1,16 @@
 package engine
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/go-gl/mathgl/mgl32"
 )
+
+/*
+INPUT
+
+*/
 
 type ui struct {
 	input *input
@@ -10,7 +18,7 @@ type ui struct {
 	font  *Font
 
 	hotItem    int // item hovered over by mouse
-	activeItem int // the item currently selected by clicking mouse
+	activeItem int // the id of the currently selected item. 0 means nothing selected
 
 	idCount int
 }
@@ -22,10 +30,8 @@ func (ui *ui) Begin() {
 }
 
 func (ui *ui) End() {
-	if !ui.input.KeyDown(MouseLeft) {
+	if Input.KeyOnce(MouseLeft) {
 		ui.activeItem = 0
-	} else if ui.activeItem == 0 {
-		ui.activeItem = -1
 	}
 }
 
@@ -49,7 +55,7 @@ func (ui *ui) Button(x, y, w, h float32, label string, colour mgl32.Vec4) bool {
 		}
 
 		ui.hotItem = id
-		if ui.activeItem == 0 && ui.input.KeyDown(MouseLeft) {
+		if ui.activeItem != id && ui.input.KeyDown(MouseLeft) {
 			ui.activeItem = id
 		}
 	}
@@ -73,24 +79,86 @@ func (ui *ui) Button(x, y, w, h float32, label string, colour mgl32.Vec4) bool {
 	return false
 }
 
+func (ui *ui) Label(label string, x, y float32, fontSize int, colour mgl32.Vec4) mgl32.Vec2 {
+	printData := ui.font.renderItem(x, y, fontSize, label)
+	printData.ri.colour = colour
+	Renderer.PushUI(printData.ri)
+	return printData.size
+}
+
+var backspaceRepeat = time.Millisecond * 100
+var backspaceTimer = time.Now()
+
+func (ui *ui) TextInput(hint string, x, y float32, widthInChars, fontSize int, buf *string) {
+	id := ui.idCount
+	ui.idCount++
+
+	var w, h float32
+	var stringRender stringRenderItemSize
+	var strlen int
+
+	if len(*buf) > 0 {
+		// Show buf
+		stringRender = ui.font.renderItem(x, y, fontSize, *buf)
+		stringRender.ri.colour = mgl32.Vec4{0, 0, 0, 1}
+		strlen = len(*buf)
+	} else {
+		// Show hint
+		stringRender = ui.font.renderItem(x, y, fontSize, hint)
+		stringRender.ri.colour = mgl32.Vec4{0.5, 0.5, 0.5, 1}
+		strlen = len(hint)
+	}
+
+	w = (stringRender.size[0] / float32(strlen)) * float32(widthInChars)
+	h = stringRender.size[1]
+
+	colour := mgl32.Vec4{1, 1, 1, 1}
+	if ui.regionhit(x, y, w, h) {
+		colour = mgl32.Vec4{0.9, 0.9, 0.9, 1}
+		ui.hotItem = id
+		if ui.activeItem != id && ui.input.KeyDown(MouseLeft) {
+			ui.activeItem = id
+			fmt.Println("tb active")
+		}
+	}
+
+	if ui.activeItem == id {
+		colour = mgl32.Vec4{0.9, 0.9, 0.9, 1}
+		for _, c := range Input.textInput {
+			*buf += string(c)
+		}
+		if Input.KeyDown(KeyBackspace) && time.Now().Sub(backspaceTimer) > backspaceRepeat {
+			backspaceTimer = time.Now()
+			if len(*buf) > 0 {
+				s := *buf
+				s = s[:len(s)-1]
+				*buf = s
+			}
+		}
+	}
+	vao, _, ind := newQuadVAO(w, h, mgl32.Vec4{0, 1, 0, 1})
+	ri := renderItem{
+		vao:        vao,
+		indices:    ind,
+		image:      ui.skin.image,
+		shader:     uiShader.Shader,
+		useNormals: false,
+		transform:  NewTransform(x+(w/2), y+(h/2), 8),
+		colour:     colour,
+	}
+
+	Renderer.PushUI(ri)
+	Renderer.PushUI(stringRender.ri)
+}
+
+func (ui *ui) Checkbox(label string, val *bool) {
+
+}
+
 func (ui *ui) regionhit(x, y, w, h float32) bool {
 	mouse := ui.input.MousePosition()
 	if mouse.X() < x || mouse.Y() < y || mouse.X() >= x+w || mouse.Y() >= y+h {
 		return false
 	}
 	return true
-}
-
-func (ui *ui) Label(label string, x, y float32, size int, colour mgl32.Vec4) {
-	printData := ui.font.renderItem(x, y, size, label)
-	printData.ri.colour = colour
-	Renderer.PushUI(printData.ri)
-}
-
-func (ui *ui) TextInput(label, hint string, buf *string) {
-
-}
-
-func (ui *ui) Checkbox(label string, val *bool) {
-
 }
