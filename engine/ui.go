@@ -36,7 +36,7 @@ func (ui *ui) End() {
 }
 
 func (ui *ui) Button(x, y, w, h float32, label string, colour mgl32.Vec4) bool {
-	printData := ui.font.renderItem(x, y, 64, label)
+	printData := ui.font.renderItem(x, y, 32, label)
 	printData.ri.transform.Pos = printData.ri.transform.Pos.Add(mgl32.Vec3{(w / 2) - (printData.size[0] / 2), (h / 2) - (printData.size[1] / 2)})
 	printData.ri.colour = mgl32.Vec4{0, 0, 0, 1}
 
@@ -73,7 +73,7 @@ func (ui *ui) Button(x, y, w, h float32, label string, colour mgl32.Vec4) bool {
 	Renderer.PushUI(ri)
 	Renderer.PushUI(printData.ri)
 
-	if !ui.input.KeyDown(MouseLeft) && ui.hotItem == id && ui.activeItem == id {
+	if ui.input.KeyDown(MouseLeft) && ui.hotItem == id && ui.activeItem == id {
 		return true
 	}
 	return false
