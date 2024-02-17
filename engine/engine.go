@@ -127,6 +127,7 @@ func (g *Game) Run() {
 }
 
 func (g *Game) SetScene(s Scene) {
+	Input.update()
 	g.scene = s
 }
 
