@@ -2,6 +2,7 @@ package engine
 
 import (
 	"runtime"
+	"time"
 
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
@@ -16,7 +17,9 @@ type input struct {
 	keysUp      [KeyLast]bool
 	mouseDown   [3]bool
 
-	screenScale float32 // On mac, we need to divide the framebuffer size by 2 to get the accurate screen position for the mouse input
+	screenScale   float32 // On mac, we need to divide the framebuffer size by 2 to get the accurate screen position for the mouse input
+	pauseStart    time.Time
+	pauseDuration time.Duration
 }
 
 func initInput() *input {
@@ -102,15 +105,21 @@ func (i *input) MousePosition() mgl32.Vec2 {
 	return mgl32.Vec2{float32(x) * xRatio, float32(y) * yRatio}
 }
 
-func (i *input) clearKeys() {
+func (i *input) pauseInput(duration time.Duration) {
 	for x := 0; x < KeyLast; x++ {
 		i.keysUp[x] = false
 		i.keysOnce[x] = false
 		i.currentKeys[x] = false
 	}
+	i.pauseStart = time.Now()
+	i.pauseDuration = duration
 }
 
 func (i *input) update() {
+	if time.Now().Sub(i.pauseStart) < i.pauseDuration {
+		return
+	}
+
 	for x := 0; x < KeyLast; x++ {
 		i.keysUp[x] = false
 		i.keysOnce[x] = false

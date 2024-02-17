@@ -127,7 +127,7 @@ func (g *Game) Run() {
 }
 
 func (g *Game) SetScene(s Scene) {
-	Input.clearKeys()
+	Input.pauseInput(time.Millisecond * 500)
 	g.scene = s
 }
 
