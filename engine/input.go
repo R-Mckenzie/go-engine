@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"fmt"
 	"runtime"
 	"time"
 
@@ -85,14 +86,23 @@ func (i *input) setWindow(w *window) {
 }
 
 func (i *input) KeyDown(key int) bool {
+	if time.Now().Sub(i.pauseStart) < i.pauseDuration {
+		return false
+	}
 	return i.keysDown[key]
 }
 
 func (i *input) KeyOnce(key int) bool {
+	if time.Now().Sub(i.pauseStart) < i.pauseDuration {
+		return false
+	}
 	return i.keysOnce[key]
 }
 
 func (i *input) KeyUp(key int) bool {
+	if time.Now().Sub(i.pauseStart) < i.pauseDuration {
+		return false
+	}
 	return i.keysUp[key]
 }
 
@@ -106,6 +116,7 @@ func (i *input) MousePosition() mgl32.Vec2 {
 }
 
 func (i *input) pauseInput(duration time.Duration) {
+	fmt.Println("Pausing input")
 	for x := 0; x < KeyLast; x++ {
 		i.keysUp[x] = false
 		i.keysOnce[x] = false
@@ -116,10 +127,6 @@ func (i *input) pauseInput(duration time.Duration) {
 }
 
 func (i *input) update() {
-	if time.Now().Sub(i.pauseStart) < i.pauseDuration {
-		return
-	}
-
 	for x := 0; x < KeyLast; x++ {
 		i.keysUp[x] = false
 		i.keysOnce[x] = false
