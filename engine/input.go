@@ -102,6 +102,14 @@ func (i *input) MousePosition() mgl32.Vec2 {
 	return mgl32.Vec2{float32(x) * xRatio, float32(y) * yRatio}
 }
 
+func (i *input) clearKeys() {
+	for x := 0; x < KeyLast; x++ {
+		i.keysUp[x] = false
+		i.keysOnce[x] = false
+		i.currentKeys[x] = false
+	}
+}
+
 func (i *input) update() {
 	for x := 0; x < KeyLast; x++ {
 		i.keysUp[x] = false

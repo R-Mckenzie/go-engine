@@ -127,7 +127,7 @@ func (g *Game) Run() {
 }
 
 func (g *Game) SetScene(s Scene) {
-	Input.update()
+	Input.clearKeys()
 	g.scene = s
 }
 
