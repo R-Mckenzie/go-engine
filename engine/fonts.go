@@ -17,10 +17,11 @@ import (
 )
 
 type Font struct {
-	ttf         truetype.Font
-	glyphs      map[int][]glyph
-	atlas       map[int]Image
-	renderDatas map[int]map[string]stringRenderItemSize
+	ttf           truetype.Font
+	glyphs        map[int][]glyph
+	atlas         map[int]Image
+	renderDatas   map[int]map[string]stringRenderItemSize
+	renderedSizes []int
 }
 
 type stringRenderItemSize struct {
@@ -42,10 +43,11 @@ func LoadFont(path string) (*Font, error) {
 	}
 
 	return &Font{
-		ttf:         *ttf,
-		glyphs:      make(map[int][]glyph),
-		atlas:       make(map[int]Image),
-		renderDatas: make(map[int]map[string]stringRenderItemSize),
+		ttf:           *ttf,
+		glyphs:        make(map[int][]glyph),
+		atlas:         make(map[int]Image),
+		renderDatas:   make(map[int]map[string]stringRenderItemSize),
+		renderedSizes: []int{},
 	}, nil
 }
 
@@ -124,6 +126,7 @@ func (f *Font) genNewFontSize(size int) {
 	f.glyphs[size] = glyphs
 	f.atlas[size] = atlas
 	f.renderDatas[size] = make(map[string]stringRenderItemSize)
+	f.renderedSizes = append(f.renderedSizes, size)
 }
 
 func toPNG(img image.Image) {
@@ -147,6 +150,16 @@ func toPNG(img image.Image) {
 	}
 }
 
+func (f *Font) isPrintable(char rune) bool {
+	if len(f.renderedSizes) == 0 {
+		return false
+	}
+	if int(char)-32 < len(f.glyphs[f.renderedSizes[0]]) {
+		return true
+	}
+	return false
+}
+
 // Returns the renderItem to be drawn, and the width in pixels from left edge to right edge
 func (f *Font) renderItem(x, y float32, size int, str string) stringRenderItemSize {
 	// Check if we have already rendered font atlas for the desired size
@@ -167,10 +180,10 @@ func (f *Font) renderItem(x, y float32, size int, str string) stringRenderItemSi
 	vertices := make([]float32, 0, 5*4*len(str))
 	indices := make([]uint32, 0, 6*len(str))
 	offset := uint32(0)
-	// currentX := float32(x)
 	currentX := float32(0)
 	currentY := float32(0)
 	maxHeight := 0.0
+
 	for _, v := range str {
 		g := f.glyphs[size][v-32]
 		maxHeight = math.Max(maxHeight, float64(g.height))

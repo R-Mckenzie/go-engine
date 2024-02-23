@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -118,14 +117,15 @@ func (ui *ui) TextInput(hint string, x, y float32, widthInChars, fontSize int, b
 		ui.hotItem = id
 		if ui.activeItem != id && ui.input.KeyDown(MouseLeft) {
 			ui.activeItem = id
-			fmt.Println("tb active")
 		}
 	}
 
 	if ui.activeItem == id {
 		colour = mgl32.Vec4{0.9, 0.9, 0.9, 1}
 		for _, c := range Input.textInput {
-			*buf += string(c)
+			if ui.font.isPrintable(c) && len(*buf) <= widthInChars {
+				*buf += string(c)
+			}
 		}
 		if Input.KeyDown(KeyBackspace) && time.Now().Sub(backspaceTimer) > backspaceRepeat {
 			backspaceTimer = time.Now()
@@ -136,6 +136,7 @@ func (ui *ui) TextInput(hint string, x, y float32, widthInChars, fontSize int, b
 			}
 		}
 	}
+
 	vao, _, ind := newQuadVAO(w, h, mgl32.Vec4{0, 1, 0, 1})
 	ri := renderItem{
 		vao:        vao,
